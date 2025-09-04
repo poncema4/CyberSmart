@@ -5,8 +5,8 @@ from games.password_match.password_match import password_match
 def intro():
     st.title("Welcome to CyberSmart!")
     st.write("""
-        CyberSmart helps you learn about cybersecurity through fun, interactive games.
-        Choose a game below to get started!
+        CyberSmart is an educational platform that helps users learn about cybersecurity through
+        fun, interactive games. Choose a game below to get started!
     """)
 
 def main():

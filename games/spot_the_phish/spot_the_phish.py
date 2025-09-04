@@ -1,8 +1,12 @@
 import streamlit as st
+import random
 
 def spot_the_phish():
     st.header("Spot the Phish")
-    st.write("Can you spot the phishing email? Select the correct answer for each question, then submit all at once.")
+    st.write("""
+        Can you spot the phishing email? Select the correct answer for each question and see good you are at spotting
+        phishing vulnerabilites!
+    """)
 
     questions = [
         {
@@ -28,8 +32,8 @@ def spot_the_phish():
             ],
             "answer": 1,
             "explanations": [
-                "This is the legitimate bank website.",
-                "Phishing sites often use similar names with subtle changes.",
+                "This would be a legitimate bank website.",
+                "Phishing sites often use similar names with some small changes.",
                 "This is a legitimate UK bank domain."
             ]
         },
@@ -37,12 +41,12 @@ def spot_the_phish():
             "question": "Which subject line is suspicious?",
             "options": [
                 "Invoice Attached",
-                "Urgent: Account Locked!",
+                "Urgent: Your Account Is Locked!",
                 "Team Lunch Tomorrow"
             ],
             "answer": 1,
             "explanations": [
-                "Invoices are common, but not always phishing.",
+                "Invoices are common, but not always phishing, always check your sender id.",
                 "Phishing emails often use urgency to trick you.",
                 "Normal work-related subjects are usually safe."
             ]
@@ -57,7 +61,7 @@ def spot_the_phish():
             "answer": 1,
             "explanations": [
                 "This is a legitimate address.",
-                "Phishing emails use addresses that look similar but are fake.",
+                "Phishing emails use addresses that look similar but are fake and try their best to make their sender id seem legitimate.",
                 "This is a legitimate UK address."
             ]
         },
@@ -86,7 +90,7 @@ def spot_the_phish():
             "explanations": [
                 "PDFs are usually safe.",
                 "Executable files (.exe) can contain malware.",
-                "Word documents are common, but be cautious."
+                "Word documents are common, but be cautious if they ask for login or a verification process."
             ]
         },
         {
@@ -112,8 +116,8 @@ def spot_the_phish():
             ],
             "answer": 2,
             "explanations": [
-                "Normal sign-off for IT support.",
-                "Security teams use professional sign-offs.",
+                "Normal sign off for IT support.",
+                "Security teams use professional sign offs.",
                 "Phishing emails often use fake departments."
             ]
         },
@@ -128,40 +132,49 @@ def spot_the_phish():
             "explanations": [
                 "Legitimate bank number.",
                 "Generic support number.",
-                "Phishing emails may use fake numbers."
+                "Phishing emails may use fake numbers and promote their audience to call them immediately for a 'deal'."
             ]
         },
         {
             "question": "Which request is suspicious?",
             "options": [
                 "Send us your account number.",
-                "Confirm your attendance.",
+                "Please confirm your attendance.",
                 "Review the attached agenda."
             ],
             "answer": 0,
             "explanations": [
                 "Phishing emails often ask for sensitive information.",
-                "Normal event confirmation.",
-                "Common work request."
+                "Normal event confirmation, be cautious and make sure you even registered to this event in the first place.",
+                "Common work request, just double check the sender."
             ]
         }
     ]
 
-    user_answers = []
-    for idx, q in enumerate(questions):
-        st.write(f"**Q{idx+1}: {q['question']}**")
-        choice = st.radio("", q["options"], key=f"phish_{idx}")
-        user_answers.append(choice)
+    if "order" not in st.session_state:
+        st.session_state.order = random.sample(range(len(questions)), len(questions))
 
-    if st.button("Submit Answers"):
+    question_order = st.session_state.order
+
+    if "answer" not in st.session_state:
+        st.session_state.answer = {}
+
+    for idx, q in enumerate(question_order, start=1):
+        question = questions[q]
+        st.write(f"**Q{idx}: {question['question']}**")
+        st.session_state.answer[q] = st.radio(
+            "", question["options"], key=f"phish_{q}"
+        )
+
+    if st.button("Check Results"):
         score = 0
-        for idx, q in enumerate(questions):
-            selected = user_answers[idx]
-            correct_idx = q["answer"]
-            selected_idx = q["options"].index(selected)
-            if selected_idx == correct_idx:
-                st.success(f"Q{idx+1}: Correct!")
+        for idx, q in enumerate(question_order, start=1):
+            question = questions[q]
+            selected = st.session_state.answer[q]
+            selected_index = question["options"].index(selected)
+            if selected_index == question["answer"]:
+                st.success(f"Q{idx}: Correct!")
                 score += 1
             else:
-                st.error(f"Q{idx+1}: Incorrect. {q['explanations'][selected_idx]}")
+                st.error(f"Q{idx}: Incorrect. {question['explanations'][selected_index]}")
         st.info(f"Your score: {score}/{len(questions)}")
