@@ -4,42 +4,46 @@ import random
 def password_match():
     st.header("Password Match")
     st.write("""
-        Determine is each password would be considered to be Weak or Strong. 
+        Determine if each password would be considered Weak or Strong. 
         Select the correct strength category for each password and get your final score!
     """)
 
     passwords = {
-        "123456": "Weak",
-        "X}7f@44_=C72": "Strong",
-        "MyDog20": "Weak",
-        "password": "Weak",
-        "5k_U2q2N+%": "Strong",
-        "!Qaz2wsx#": "Strong",
-        "6z[MO": "Weak",
-        "Summer2024!": "Strong",
-        "abc123": "Weak",
-        "C@tLover#88": "Strong"
+        "123456": {"strength": "Weak", "explanation": "Very common and easily guessable."},
+        "X}7f@44_=C72": {"strength": "Strong", "explanation": "Long with random characters, making it harder to guess."},
+        "MyDog20": {"strength": "Weak", "explanation": "Short, based on simple pattern words and numbers."},
+        "password": {"strength": "Weak", "explanation": "One of the most common passwords in the world."},
+        "5k_U2q2N+%": {"strength": "Strong", "explanation": "Contains a mix of symbols, numbers, and letters."},
+        "!Qaz2wsx#": {"strength": "Strong", "explanation": "Complex mix of symbols, numbers, and letters."},
+        "6z[MO": {"strength": "Weak", "explanation": "Too short, brute forceable needs to be longer."},
+        "Summer2024!": {"strength": "Strong", "explanation": "Good length with mix of cases, numbers, and symbol."},
+        "abc123": {"strength": "Weak", "explanation": "Very common and predictable sequence."},
+        "C@tLover#88": {"strength": "Strong", "explanation": "Less guessable since it has a mix of symbols, numbers, and words."}
     }
 
-    password_shuffle = random.sample(list(passwords.keys()), len(passwords))
+    if "password_order" not in st.session_state:
+        st.session_state.password_order = random.sample(list(passwords.keys()), len(passwords))
+
+    password_order = st.session_state.password_order
 
     if "answer" not in st.session_state:
         st.session_state.answer = {}
 
-    for password in passwords:
-        st.write(f"**Password:** `{password}`")
-        st.session_state.answer[password] = st.radio(
-            "Choose category:", ["Strong", "Weak"], key=f"password_{password}"
+    for idx, p in enumerate(password_order, start=1):
+        st.write(f"**Q{idx}: Password:** `{p}`")
+        st.session_state.answer[p] = st.radio(
+            "", ["Strong", "Weak"], key=f"password_{p}"
         )
 
     if st.button("Check Results"):
         score = 0
-        for i, password in enumerate(password_shuffle):
-            user_choice = st.session_state.answer[password]
-            correct_choice = passwords[password]
+        for idx, p in enumerate(password_order, start=1):
+            user_choice = st.session_state.answer[p]
+            correct_choice = passwords[p]["strength"]
+            explanation = passwords[p]["explanation"]
             if user_choice == correct_choice:
-                st.success(f"Password {i+1}: Correct!")
+                st.success(f"Q{idx}: Correct!")
                 score += 1
             else:
-                st.error(f"Password {i+1}: Incorrect.")
-        st.info(f"You matched {score}/{len(passwords)} correctly!")
+                st.error(f"Q{idx}: Incorrect. {explanation}")
+        st.info(f"Your score: {score}/{len(passwords)}")

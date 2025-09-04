@@ -151,10 +151,10 @@ def spot_the_phish():
         }
     ]
 
-    if "order" not in st.session_state:
-        st.session_state.order = random.sample(range(len(questions)), len(questions))
+    if "question_order" not in st.session_state:
+        st.session_state.question_order = random.sample(range(len(questions)), len(questions))
 
-    question_order = st.session_state.order
+    question_order = st.session_state.question_order
 
     if "answer" not in st.session_state:
         st.session_state.answer = {}
