@@ -169,7 +169,7 @@ def password_strength():
         with col1:
             st.metric("Entropy", f"{entropy} bits")
         with col2:
-            st.metric("Password Length", len(st.session_state["last_password"]))
+            st.metric("Password Length", len(password))
         
         # Display SHA-256 hash
         with st.expander("SHA-256 Hash"):
