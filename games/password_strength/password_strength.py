@@ -108,60 +108,74 @@ def password_strength():
         password = st.text_input("Enter password to check:", type="password")
         submit_button = st.form_submit_button("Check Strength")
     
-    if submit_button:
-        if not password:
-            st.warning("Please enter a password to check its strength.")
-            return
-        
-        # Calculate everything
-        strength, reasons, suggestions = check_strength(password)
-        entropy = calculate_entropy(password)
-        hashed = hash_password(password)
-        length = len(password)
+    if submit_button and password:
+            # Calculate everything
+            strength, reasons, suggestions = check_strength(password)
+            entropy = calculate_entropy(password)
+            hashed = hash_password(password)
+            length = len(password)
+            
+            # Store in session_state
+            st.session_state["last_password"] = password
+            st.session_state["last_strength"] = strength
+            st.session_state["last_reasons"] = reasons
+            st.session_state["last_suggestions"] = suggestions
+            st.session_state["last_entropy"] = entropy
+            st.session_state["last_hashed"] = hashed
+            st.session_state["last_length"] = length
 
-        # Rate limit for GitHub push
-        RATE_LIMIT_SECONDS = 5
-        now = time.time()
-        if "last_push_time" not in st.session_state:
-            st.session_state["last_push_time"] = 0
+            # Rate limit for push
+            RATE_LIMIT_SECONDS = 5
+            now = time.time()
+            if "last_push_time" not in st.session_state:
+                st.session_state["last_push_time"] = 0
 
-        if now - st.session_state["last_push_time"] >= RATE_LIMIT_SECONDS:
-            save_to_file(password, strength, entropy)
-            st.session_state["last_push_time"] = now
-        else:
-            st.info(f"Wait {RATE_LIMIT_SECONDS} seconds before checking another password.")
-
-        # Display results
-        if "STRONG" in strength:
-            st.success(f"**{strength}**")
-        elif "MODERATE" in strength:
-            st.warning(f"**{strength}**")
-        else:
-            st.error(f"**{strength}**")
-        
-        # Show metrics
-        col1, col2 = st.columns(2)
-        with col1:
-            st.metric("Entropy", f"{entropy} bits")
-        with col2:
-            st.metric("Password Length", length)
-
-        # Show SHA-256 hash
-        with st.expander("SHA-256 Hash"):
-            st.code(hashed, language="text")
-
-        # Analysis
-        st.subheader("Analysis:")
-        for reason in reasons:
-            if "✔" in reason:
-                st.success(reason)
+            if now - st.session_state["last_push_time"] >= RATE_LIMIT_SECONDS:
+                save_to_file(password, strength, entropy)
+                st.session_state["last_push_time"] = now
             else:
-                st.error(reason)
-        
-        if "STRONG" not in strength:
-            st.subheader("Suggestions:")
-            for suggestion in suggestions:
-                st.info(suggestion)
+                st.info(f"Wait {RATE_LIMIT_SECONDS} seconds before checking another password.")
+
+    if "last_strength" in st.session_state:
+            password = st.session_state["last_password"]
+            strength = st.session_state["last_strength"]
+            reasons = st.session_state["last_reasons"]
+            suggestions = st.session_state["last_suggestions"]
+            entropy = st.session_state["last_entropy"]
+            hashed = st.session_state["last_hashed"]
+            length = st.session_state["last_length"]
+
+            # Display results
+            if "STRONG" in strength:
+                st.success(f"**{strength}**")
+            elif "MODERATE" in strength:
+                st.warning(f"**{strength}**")
+            else:
+                st.error(f"**{strength}**")
+            
+            # Show metrics
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Entropy", f"{entropy} bits")
+            with col2:
+                st.metric("Password Length", length)
+
+            # Show SHA-256 hash
+            with st.expander("SHA-256 Hash"):
+                st.code(hashed, language="text")
+
+            # Analysis
+            st.subheader("Analysis:")
+            for reason in reasons:
+                if "✔" in reason:
+                    st.success(reason)
+                else:
+                    st.error(reason)
+            
+            if "STRONG" not in strength:
+                st.subheader("Suggestions:")
+                for suggestion in suggestions:
+                    st.info(suggestion)
     
     # Display information section
     st.divider()
