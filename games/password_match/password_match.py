@@ -42,8 +42,8 @@ def password_match():
             correct_choice = passwords[p]["strength"]
             explanation = passwords[p]["explanation"]
             if user_choice == correct_choice:
-                st.success(f"Q{idx}: Correct!")
+                st.success(f"✔ Q{idx}")
                 score += 1
             else:
-                st.error(f"Q{idx}: Incorrect. {explanation}")
+                st.error(f"✘ Q{idx}: {explanation}")
         st.info(f"Your score: {score}/{len(passwords)}")

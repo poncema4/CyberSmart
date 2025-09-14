@@ -173,8 +173,8 @@ def spot_the_phish():
             selected = st.session_state.answer[q]
             selected_index = question["options"].index(selected)
             if selected_index == question["answer"]:
-                st.success(f"Q{idx}: Correct!")
+                st.success(f"✔ Q{idx}")
                 score += 1
             else:
-                st.error(f"Q{idx}: Incorrect. {question['explanations'][selected_index]}")
+                st.error(f"✘ Q{idx}: {question['explanations'][selected_index]}")
         st.info(f"Your score: {score}/{len(questions)}")

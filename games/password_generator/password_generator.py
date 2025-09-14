@@ -4,7 +4,9 @@ import string
 
 def password_generator():
     st.header("Password Generator")
-    st.write("Select your password criteria, then generate a strong password!")
+    st.write("""
+        Select your password criteria, then generate a strong password!
+    """)
 
     col1, col2 = st.columns(2)
     with col1:
@@ -40,5 +42,5 @@ def password_generator():
 
     if password:
         st.subheader("Your generated password:")
-        # Use st.code() instead of st.text_input to get automatic copy button
+        # Automatically generate a code block with the password to be able to copy it easily
         st.code(password, language="text")

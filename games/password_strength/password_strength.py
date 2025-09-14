@@ -1,66 +1,50 @@
-import re  # Regular expressions for pattern matching in strings
-import hashlib  # To create secure hash of passwords
-import math  # For mathematical calculations, like entropy
-import random  # For generating random characters
-import string  # Contains pre-defined character sets like ascii_letters, digits, punctuation
-from datetime import datetime  # To log date and time of password checks
+import re
+import hashlib
+import math
+from datetime import datetime
 import streamlit as st
-
-# ---------------- Password strength and helper functions ----------------
+from github_push import push_to_github
 
 def check_strength(password):
-    """
-    Checks the strength of the given password by evaluating:
-    - Length
-    - Presence of uppercase letters
-    - Presence of lowercase letters
-    - Presence of digits
-    - Presence of special characters
-
-    Returns:
-        strength (str): 'STRONG', 'MODERATE', or 'WEAK'
-        reasons (list): List of checks passed or failed
-        suggestions (list): Suggestions for improvement if not strong
-    """
     reasons = []
     suggestions = []
 
-    # Check if password length is at least 8 characters
+    # Check if the password is at least 8 characters long
     if len(password) < 8:
         reasons.append("✘ Less than 8 characters")
-        suggestions.append("✓ Use at least 8 characters")
+        suggestions.append("Use at least 8 characters")
     else:
         reasons.append("✔ Good length")
 
     # Check for uppercase letters
     if not re.search(r"[A-Z]", password):
         reasons.append("✘ No uppercase letters")
-        suggestions.append("✓ Add uppercase letters (A-Z)")
+        suggestions.append("Add uppercase letters (A-Z)")
     else:
         reasons.append("✔ Has uppercase letter(s)")
 
     # Check for lowercase letters
     if not re.search(r"[a-z]", password):
         reasons.append("✘ No lowercase letters")
-        suggestions.append("✓ Add lowercase letters (a-z)")
+        suggestions.append("Add lowercase letters (a-z)")
     else:
         reasons.append("✔ Has lowercase letter(s)")
 
-    # Check for digits
+    # Check for numbers
     if not re.search(r"[0-9]", password):
         reasons.append("✘ No numbers")
-        suggestions.append("✓ Include numbers (0-9)")
+        suggestions.append("Include numbers (0-9)")
     else:
         reasons.append("✔ Has number(s)")
 
-    # Check for special characters
+    # Check for symbols/special characters
     if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
         reasons.append("✘ No special characters")
-        suggestions.append("✓ Include symbols like !@#$%^")
+        suggestions.append("Include symbols like !@#$%^")
     else:
         reasons.append("✔ Has special character(s)")
 
-    # Calculate score by summing boolean checks
+    # Calculate score by the sum of boolean checks
     score = sum([
         len(password) >= 8,
         bool(re.search(r"[A-Z]", password)),
@@ -72,7 +56,7 @@ def check_strength(password):
     # Determine strength category based on score
     if score == 5:
         strength = "Password is STRONG"
-    elif score >= 3:
+    elif 4 >= score >= 3:
         strength = "Password is MODERATE"
     else:
         strength = "Password is WEAK"
@@ -80,23 +64,8 @@ def check_strength(password):
     return strength, reasons, suggestions
 
 def calculate_entropy(password):
-    """
-    Estimates the entropy (randomness) of the password,
-    which is a measure of how hard it is to guess or brute-force.
-
-    Entropy is calculated as:
-        entropy = length_of_password * log2(size_of_charset)
-
-    The charset size depends on the categories of characters present:
-    - Lowercase letters: 26
-    - Uppercase letters: 26
-    - Digits: 10
-    - Special characters: estimated 32
-
-    Returns:
-        entropy (float): Estimated entropy rounded to 2 decimals
-    """
     charset_size = 0
+
     if re.search(r"[a-z]", password):
         charset_size += 26
     if re.search(r"[A-Z]", password):
@@ -104,96 +73,52 @@ def calculate_entropy(password):
     if re.search(r"[0-9]", password):
         charset_size += 10
     if re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
-        charset_size += 32  # rough estimate for special chars
+        charset_size += 32
 
     if charset_size == 0:
-        return 0  # No valid characters detected
+        return 0
 
     entropy = len(password) * math.log2(charset_size)
     return round(entropy, 2)
 
-def generate_strong_password(length=12):
-    """
-    Generates a random strong password using a mix of:
-    - uppercase letters
-    - lowercase letters
-    - digits
-    - punctuation/special characters
-
-    Args:
-        length (int): Desired length of password (default 12)
-
-    Returns:
-        str: Randomly generated password string
-    """
-    all_chars = string.ascii_letters + string.digits + string.punctuation
-    return ''.join(random.choices(all_chars, k=length))
-
 def hash_password(password):
-    """
-    Creates a secure SHA-256 hash of the password.
-
-    Args:
-        password (str): Plain text password
-
-    Returns:
-        str: Hexadecimal SHA-256 hash of the password
-    """
     return hashlib.sha256(password.encode()).hexdigest()
 
 def save_to_file(password, strength, entropy):
-    """
-    Logs the password check event to a file with timestamp.
-    The actual password is masked with '*' characters for privacy.
-
-    Args:
-        password (str): The original password (masked in file)
-        strength (str): Strength classification of the password
-        entropy (float): Estimated entropy in bits
-    """
     line = f"{datetime.now()} | Password: {'*' * len(password)} | Strength: {strength} | Entropy: {entropy} bits\n"
     with open("password_report.txt", "a", encoding="utf-8") as file:
         file.write(line)
 
-# ---------------- Main Streamlit Application Function ----------------
+    # Push to Github
+    try:
+        push_to_github("password_report.txt", commit_message="Updated password report from CyberSmart!", branch="main")
+    except Exception as e:
+        print(f"Failed to push to GitHub: {e}")
 
 def password_strength():
-    """
-    Main Streamlit application for password strength checking and
-    password generation.
-    """
-    st.header("🔐 Advanced Password Strength Checker 🔐")
+    st.header("Password Strength Checker")
+    st.write("""
+        Enter a password below to analyze its strength, entropy, and security. Get detailed feedback and suggestions for improvements in your current password!
+    """)
     
-    # ---------------- Password Strength Check Section ----------------
-    
-    st.subheader("Check Password Strength")
-    
-    # Create columns for password input and show password checkbox
     col1, col2 = st.columns([3, 1])
     
     with col1:
-        # Password input with option to show/hide
-        show_password = st.checkbox("Show Password", key="show_password_check")
-        if show_password:
-            password = st.text_input("Enter password to check:", key="password_input")
-        else:
-            password = st.text_input("Enter password to check:", type="password", key="password_input")
+        password = st.text_input("Enter password to check:", type="password", key="password_input")
     
     with col2:
-        st.write("")  # Empty space for alignment
+        st.write("")
         check_button = st.button("Check Strength", key="check_btn")
     
     # Check password strength when button is clicked or password is entered
     if (check_button or password) and password:
-        # Call the check_strength function to get strength details
         strength, reasons, suggestions = check_strength(password)
-        entropy = calculate_entropy(password)  # Calculate entropy
-        hashed = hash_password(password)  # Create SHA-256 hash
+        entropy = calculate_entropy(password)
+        hashed = hash_password(password)
 
-        save_to_file(password, strength, entropy)  # Save results to file
+        save_to_file(password, strength, entropy)
 
         # Display results
-        # Create color coding for strength
         if "STRONG" in strength:
             st.success(f"**{strength}**")
         elif "MODERATE" in strength:
@@ -208,7 +133,7 @@ def password_strength():
         with col2:
             st.metric("Password Length", len(password))
         
-        # Display SHA-256 hash in an expandable section
+        # Display SHA-256 hash
         with st.expander("SHA-256 Hash"):
             st.code(hashed, language="text")
         
@@ -227,91 +152,65 @@ def password_strength():
                 st.info(suggestion)
     
     elif check_button and not password:
-        st.warning("Please enter a password to check.")
+        st.warning("Please enter a password to check its strength.")
     
-    # ---------------- Password Generator Section ----------------------
-    
-    st.divider()
-    st.subheader("Generate Strong Password")
-    
-    # Create columns for length input and generate button
-    col1, col2, col3 = st.columns([2, 1, 2])
-    
-    with col1:
-        length = st.number_input("Enter password length (min 8):", 
-                                min_value=8, max_value=100, value=12, 
-                                key="length_input")
-    
-    with col2:
-        st.write("")  # Empty space for alignment
-        generate_button = st.button("Generate Password", key="generate_btn")
-    
-    with col3:
-        show_generated = st.checkbox("Show Generated Password", key="show_generated")
-    
-    # Initialize session state for generated password
-    if 'generated_password' not in st.session_state:
-        st.session_state.generated_password = ""
-    
-    # Generate password when button is clicked
-    if generate_button:
-        try:
-            length = int(length)
-            if length < 8:
-                st.error("Minimum password length is 8.")
-            else:
-                new_password = generate_strong_password(length)
-                st.session_state.generated_password = new_password
-                st.success("Password generated successfully!")
-        except ValueError:
-            st.error("Please enter a valid number for length.")
-    
-    # Display generated password
-    if st.session_state.generated_password:
-        st.subheader("Generated Password:")
-        if show_generated:
-            st.code(st.session_state.generated_password, language="text")
-        else:
-            st.code("*" * len(st.session_state.generated_password), language="text")
-        
-        # Option to copy password (display instruction)
-        st.info("💡 Tip: You can select and copy the password above, or use it in the strength checker above!")
-        
-        # Auto-check generated password strength
-        if st.checkbox("Check generated password strength", key="auto_check"):
-            gen_strength, gen_reasons, gen_suggestions = check_strength(st.session_state.generated_password)
-            gen_entropy = calculate_entropy(st.session_state.generated_password)
-            
-            if "STRONG" in gen_strength:
-                st.success(f"**{gen_strength}**")
-            elif "MODERATE" in gen_strength:
-                st.warning(f"**{gen_strength}**")
-            else:
-                st.error(f"**{gen_strength}**")
-            
-            st.metric("Generated Password Entropy", f"{gen_entropy} bits")
-    
-    # ---------------- Information Section ----------------------
-    
+    # Display information section
     st.divider()
     with st.expander("ℹ️ About Password Security"):
         st.write("""
         **Password Strength Criteria:**
-        - **Length**: At least 8 characters (longer is better)
+        - **Length**: At least 8 characters
         - **Uppercase Letters**: A-Z
         - **Lowercase Letters**: a-z  
         - **Numbers**: 0-9
         - **Special Characters**: !@#$%^&*(),.?\":{}|<>
+        """)
+
+        st.write("""
+        **Strength Levels:**
+        - **Strong**: All 5 criteria met
+        - **Moderate**: 3-4 criteria met
+        - **Weak**: Less than 3 criteria met
+        """)
+
+        st.markdown('<hr style="margin:5px 0;">', unsafe_allow_html=True)
+
+        st.write("""
+        **Entropy (Password Randomness):**
+        - **0-30 bits**: Very predictable, easily cracked
+        - **30-50 bits**: Weak, vulnerable to attacks
+        - **50-70 bits**: Moderate strength, acceptable for low-risk accounts
+        - **70-90 bits**: Strong, good for most accounts
+        - **90+ bits**: Very strong, excellent for high-security accounts
+
+        Higher entropy means your password has more possible combinations, making it exponentially harder to crack through brute force attacks.
+        """)
+
+        st.markdown('<hr style="margin:5px 0;">', unsafe_allow_html=True)
+
+        st.write("""
+        **SHA-256 Hash:**
+                
+        Secure Hash Algorithm 256-bit (SHA-256) is a cryptographic hash function that converts your password into a fixed 64-character string.
+                 
+        - **One-way function**: Cannot be reversed to get the original password
+        - **Deterministic**: Same password always produces the same hash
+        - **Avalanche effect**: Small password changes create completely different hashes
+        - **Collision resistant**: Nearly impossible for two different passwords to have the same hash           
         
-        **Entropy**: Measures password randomness in bits. Higher entropy means harder to crack.
+        Websites store password hashes instead of actual passwords for security. When you log in, your entered password is hashed and compared to the stored hash value. 
         
-        **SHA-256 Hash**: A secure one-way function that converts your password into a fixed-length string.
-        
+        """)
+
+        st.markdown('<hr style="margin:5px 0;">', unsafe_allow_html=True)
+
+        st.write("""
         **Tips for Strong Passwords:**
         - Use a unique password for each account
         - Consider using a password manager
         - Avoid personal information (names, birthdays, etc.)
         - Update passwords regularly
+        - Use passphrases (multiple random words)
         """)
     
     # Display log file info
@@ -325,3 +224,9 @@ def password_strength():
         
         This helps track password security practices over time.
         """)
+
+        # Password report file link
+        st.markdown(
+            "[View Password Report on GitHub](https://github.com/poncema4/CyberSmart/blob/main/password_report.txt)",
+            unsafe_allow_html=True
+        )
