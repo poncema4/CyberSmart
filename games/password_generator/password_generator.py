@@ -1,7 +1,6 @@
 import streamlit as st
 import random
 import string
-import clipboard
 
 def password_generator():
     st.header("Password Generator")
@@ -34,10 +33,6 @@ def password_generator():
     if 'generated_password' not in st.session_state:
         st.session_state.generated_password = ""
 
-    def on_copy_click():
-        clipboard.copy(st.session_state.generated_password)
-        st.success('Password copied to clipboard!')
-
     if st.button("Generate Password"):
         st.session_state.generated_password = ''.join(random.choices(char_pool, k=length))
 
@@ -45,5 +40,5 @@ def password_generator():
 
     if password:
         st.subheader("Your generated password:")
-        st.text_input("Password:", value=password, key="generated_password_box", disabled=True)
-        st.button("Copy to clipboard", on_click=on_copy_click)
+        # Use st.code() instead of st.text_input to get automatic copy button
+        st.code(password, language="text")

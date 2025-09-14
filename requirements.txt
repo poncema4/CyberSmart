@@ -1,1 +1,2 @@
 streamlit>=1.30.0
+streamlit-clipboard>=0.1.4
