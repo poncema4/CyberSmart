@@ -86,7 +86,7 @@ def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
 def save_to_file(password, strength, entropy):
-    line = f"{datetime.now()} | Password: {'*' * len(password)} | Strength: {strength} | Entropy: {entropy} bits\n"
+    line = f"{datetime.now()} | Password: {'*' * len(password)} | Length: {len(password)} | Strength: {strength} | Entropy: {entropy} bits\n"
     with open("password_report.txt", "a", encoding="utf-8") as file:
         file.write(line)
 
@@ -99,62 +99,37 @@ def save_to_file(password, strength, entropy):
 def password_strength():
     st.header("Password Strength Checker")
     st.write("""
-        Enter a password below to analyze its strength, entropy, and security. Get detailed feedback and suggestions for improvements in your current password!
+        Enter a password below to analyze its strength, entropy, and security. 
+        Get detailed feedback and suggestions for improvements in your current password!
     """)
-    
-    col1, col2 = st.columns([3, 1])
-    
-    with col1:
-        password = st.text_input("Enter password to check:", type="password", key="password_input")
-    
-    with col2:
-        st.write("")
-        check_button = st.button("Check Strength", key="check_btn")
 
-    # Initialize session state flags
-    if "password_checked" not in st.session_state:
-        st.session_state["password_checked"] = False
-    if "last_password" not in st.session_state:
-        st.session_state["last_password"] = ""
-    if "last_push_time" not in st.session_state:
-        st.session_state["last_push_time"] = 0
-
-    # Reset flag if password changed
-    if password != st.session_state["last_password"]:
-        st.session_state["password_checked"] = False
-        st.session_state["last_password"] = password
+    # Use a form to require explicit submit
+    with st.form("password_form"):
+        password = st.text_input("Enter password to check:", type="password")
+        submit_button = st.form_submit_button("Check Strength")
     
-    # Check password strength when button is clicked or password is entered
-    if check_button and password:
+    if submit_button:
+        if not password:
+            st.warning("Please enter a password to check its strength.")
+            return
+        
+        # Calculate everything
         strength, reasons, suggestions = check_strength(password)
         entropy = calculate_entropy(password)
         hashed = hash_password(password)
+        length = len(password)
 
-        # Store results in session_state
-        st.session_state["last_strength"] = strength
-        st.session_state["last_reasons"] = reasons
-        st.session_state["last_suggestions"] = suggestions
-        st.session_state["last_entropy"] = entropy
-        st.session_state["last_hashed"] = hashed
-
+        # Rate limit for GitHub push
         RATE_LIMIT_SECONDS = 5
+        now = time.time()
+        if "last_push_time" not in st.session_state:
+            st.session_state["last_push_time"] = 0
 
-        if not st.session_state["password_checked"]:
-            now = time.time()
-            if now - st.session_state["last_push_time"] >= RATE_LIMIT_SECONDS:
-                save_to_file(password, strength, entropy)
-                st.session_state["password_checked"] = True
-                st.session_state["last_push_time"] = now
-            else:
-                st.info(f"Wait {RATE_LIMIT_SECONDS} seconds between pushes to GitHub.")
-
-    # Display results if available
-    if "last_strength" in st.session_state:
-        strength = st.session_state["last_strength"]
-        reasons = st.session_state["last_reasons"]
-        suggestions = st.session_state["last_suggestions"]
-        entropy = st.session_state["last_entropy"]
-        hashed = st.session_state["last_hashed"]
+        if now - st.session_state["last_push_time"] >= RATE_LIMIT_SECONDS:
+            save_to_file(password, strength, entropy)
+            st.session_state["last_push_time"] = now
+        else:
+            st.info(f"Wait {RATE_LIMIT_SECONDS} seconds before checking another password.")
 
         # Display results
         if "STRONG" in strength:
@@ -164,18 +139,18 @@ def password_strength():
         else:
             st.error(f"**{strength}**")
         
-        # Display entropy and hash
+        # Show metrics
         col1, col2 = st.columns(2)
         with col1:
             st.metric("Entropy", f"{entropy} bits")
         with col2:
-            st.metric("Password Length", len(password))
-        
-        # Display SHA-256 hash
+            st.metric("Password Length", length)
+
+        # Show SHA-256 hash
         with st.expander("SHA-256 Hash"):
             st.code(hashed, language="text")
-        
-        # Display analysis
+
+        # Analysis
         st.subheader("Analysis:")
         for reason in reasons:
             if "✔" in reason:
@@ -183,14 +158,10 @@ def password_strength():
             else:
                 st.error(reason)
         
-        # Show suggestions only if password is not strong
         if "STRONG" not in strength:
             st.subheader("Suggestions:")
             for suggestion in suggestions:
                 st.info(suggestion)
-    
-    elif check_button and not password:
-        st.warning("Please enter a password to check its strength.")
     
     # Display information section
     st.divider()
