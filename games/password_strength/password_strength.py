@@ -4,6 +4,7 @@ import math
 from datetime import datetime
 import streamlit as st
 from github_push import push_to_github
+import time
 
 def check_strength(password):
     reasons = []
@@ -109,6 +110,19 @@ def password_strength():
     with col2:
         st.write("")
         check_button = st.button("Check Strength", key="check_btn")
+
+    # Initialize session state flags
+    if "password_checked" not in st.session_state:
+        st.session_state["password_checked"] = False
+    if "last_password" not in st.session_state:
+        st.session_state["last_password"] = ""
+    if "last_push_time" not in st.session_state:
+        st.session_state["last_push_time"] = 0
+
+    # Reset flag if password changed
+    if password != st.session_state["last_password"]:
+        st.session_state["password_checked"] = False
+        st.session_state["last_password"] = password
     
     # Check password strength when button is clicked or password is entered
     if (check_button or password) and password:
@@ -116,7 +130,16 @@ def password_strength():
         entropy = calculate_entropy(password)
         hashed = hash_password(password)
 
-        save_to_file(password, strength, entropy)
+        RATE_LIMIT_SECONDS = 5
+
+        if not st.session_state["password_checked"]:
+            now = time.time()
+            if now - st.session_state["last_push_time"] >= RATE_LIMIT_SECONDS:
+                save_to_file(password, strength, entropy)
+                st.session_state["password_checked"] = True
+                st.session_state["last_push_time"] = now
+            else:
+                st.info(f"Wait {RATE_LIMIT_SECONDS} seconds between pushes to GitHub.")
 
         # Display results
         if "STRONG" in strength:
