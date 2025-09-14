@@ -125,7 +125,7 @@ def password_strength():
         st.session_state["last_password"] = password
     
     # Check password strength when button is clicked or password is entered
-    if (check_button or password) and password:
+    if check_button and password:
         strength, reasons, suggestions = check_strength(password)
         entropy = calculate_entropy(password)
         hashed = hash_password(password)
