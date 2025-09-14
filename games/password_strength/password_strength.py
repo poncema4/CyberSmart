@@ -130,6 +130,13 @@ def password_strength():
         entropy = calculate_entropy(password)
         hashed = hash_password(password)
 
+        # Store results in session_state
+        st.session_state["last_strength"] = strength
+        st.session_state["last_reasons"] = reasons
+        st.session_state["last_suggestions"] = suggestions
+        st.session_state["last_entropy"] = entropy
+        st.session_state["last_hashed"] = hashed
+
         RATE_LIMIT_SECONDS = 5
 
         if not st.session_state["password_checked"]:
@@ -140,6 +147,14 @@ def password_strength():
                 st.session_state["last_push_time"] = now
             else:
                 st.info(f"Wait {RATE_LIMIT_SECONDS} seconds between pushes to GitHub.")
+
+    # Display results if available
+    if "last_strength" in st.session_state:
+        strength = st.session_state["last_strength"]
+        reasons = st.session_state["last_reasons"]
+        suggestions = st.session_state["last_suggestions"]
+        entropy = st.session_state["last_entropy"]
+        hashed = st.session_state["last_hashed"]
 
         # Display results
         if "STRONG" in strength:
@@ -154,7 +169,7 @@ def password_strength():
         with col1:
             st.metric("Entropy", f"{entropy} bits")
         with col2:
-            st.metric("Password Length", len(password))
+            st.metric("Password Length", len(st.session_state["last_password"]))
         
         # Display SHA-256 hash
         with st.expander("SHA-256 Hash"):
