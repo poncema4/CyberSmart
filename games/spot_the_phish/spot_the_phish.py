@@ -4,8 +4,7 @@ import random
 def spot_the_phish():
     st.header("Spot the Phish")
     st.write("""
-        Can you spot the phishing email? Select the correct answer for each question and see good you are at spotting
-        phishing vulnerabilites!
+        Can you spot the phishing email? Select the correct answer for each question and see how good you are at spotting phishing vulnerabilities!
     """)
 
     questions = [
@@ -151,30 +150,40 @@ def spot_the_phish():
         }
     ]
 
-    if "question_order" not in st.session_state:
-        st.session_state.question_order = random.sample(range(len(questions)), len(questions))
+    if "phish_attempted" in st.session_state:
+        st.success(f"You have already submitted. Your score: {st.session_state['spot_the_phish_score']} / {len(questions)}")
+        return st.session_state['spot_the_phish_score']
 
-    question_order = st.session_state.question_order
-
-    if "answer" not in st.session_state:
-        st.session_state.answer = {}
+    if "phish_answers" not in st.session_state:
+        st.session_state.phish_answers = {}
+    if "phish_order" not in st.session_state:
+        st.session_state.phish_order = random.sample(range(len(questions)), len(questions))
+    question_order = st.session_state.phish_order
 
     for idx, q in enumerate(question_order, start=1):
         question = questions[q]
         st.write(f"**Q{idx}: {question['question']}**")
-        st.session_state.answer[q] = st.radio(
+        st.session_state.phish_answers[q] = st.radio(
             "", question["options"], key=f"phish_{q}"
         )
 
-    if st.button("Check Results"):
+    if st.button("Check Results", key="phish_submit"):
         score = 0
+        user_answers = {}
         for idx, q in enumerate(question_order, start=1):
             question = questions[q]
-            selected = st.session_state.answer[q]
+            selected = st.session_state.phish_answers[q]
             selected_index = question["options"].index(selected)
+            user_answers[q] = selected_index
             if selected_index == question["answer"]:
                 st.success(f"✔ Q{idx}")
                 score += 1
             else:
                 st.error(f"✘ Q{idx}: {question['explanations'][selected_index]}")
+        st.session_state['spot_the_phish_score'] = score
+        st.session_state['phish_attempted'] = True
+        st.session_state['phish_user_answers'] = user_answers
         st.info(f"Your score: {score}/{len(questions)}")
+        return score
+
+    return None

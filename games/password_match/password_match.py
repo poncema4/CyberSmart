@@ -4,8 +4,7 @@ import random
 def password_match():
     st.header("Password Match")
     st.write("""
-        Determine if each password would be considered Weak or Strong. 
-        Select the correct strength category for each password and get your final score!
+        Determine if each password would be considered Weak or Strong. Select the correct strength category for each password and get your final score!
     """)
 
     passwords = {
@@ -21,29 +20,39 @@ def password_match():
         "C@tLover#88": {"strength": "Strong", "explanation": "Less guessable since it has a mix of symbols, numbers, and words."}
     }
 
+    if "match_attempted" in st.session_state:
+        st.success(f"You have already submitted. Your score: {st.session_state['password_match_score']} / {len(passwords)}")
+        return st.session_state['password_match_score']
+
+    if "match_answers" not in st.session_state:
+        st.session_state.match_answers = {}
     if "password_order" not in st.session_state:
         st.session_state.password_order = random.sample(list(passwords.keys()), len(passwords))
-
     password_order = st.session_state.password_order
-
-    if "answer" not in st.session_state:
-        st.session_state.answer = {}
 
     for idx, p in enumerate(password_order, start=1):
         st.write(f"**Q{idx}: Password:** `{p}`")
-        st.session_state.answer[p] = st.radio(
+        st.session_state.match_answers[p] = st.radio(
             "", ["Strong", "Weak"], key=f"password_{p}"
         )
 
-    if st.button("Check Results"):
+    if st.button("Check Results", key="match_submit"):
         score = 0
+        user_answers = {}
         for idx, p in enumerate(password_order, start=1):
-            user_choice = st.session_state.answer[p]
+            user_choice = st.session_state.match_answers[p]
             correct_choice = passwords[p]["strength"]
             explanation = passwords[p]["explanation"]
+            user_answers[p] = user_choice
             if user_choice == correct_choice:
                 st.success(f"✔ Q{idx}")
                 score += 1
             else:
                 st.error(f"✘ Q{idx}: {explanation}")
+        st.session_state['password_match_score'] = score
+        st.session_state['match_attempted'] = True
+        st.session_state['match_user_answers'] = user_answers
         st.info(f"Your score: {score}/{len(passwords)}")
+        return score
+
+    return None

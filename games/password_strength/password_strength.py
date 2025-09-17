@@ -3,7 +3,7 @@ import hashlib
 import math
 from datetime import datetime
 import streamlit as st
-from github_push import push_to_github
+from utils.github_push import push_to_github
 import time
 
 def check_strength(password):
@@ -87,7 +87,7 @@ def hash_password(password):
 
 def save_to_file(password, strength, entropy):
     line = f"{datetime.now()} | Password: {'*' * len(password)} | Length: {len(password)} | Strength: {strength} | Entropy: {entropy} bits\n"
-    with open("password_report.txt", "a", encoding="utf-8") as file:
+    with open("reports/password_report.txt", "a", encoding="utf-8") as file:
         file.write(line)
 
     # Push to Github
@@ -103,18 +103,58 @@ def password_strength():
         Get detailed feedback and suggestions for improvements in your current password!
     """)
 
+
+    # Only allow one password check per session
+    if st.session_state.get("password_strength_attempted", False):
+        # Show the previous results
+        password = st.session_state.get("last_password", "")
+        strength = st.session_state.get("last_strength", "")
+        reasons = st.session_state.get("last_reasons", [])
+        suggestions = st.session_state.get("last_suggestions", [])
+        entropy = st.session_state.get("last_entropy", 0)
+        hashed = st.session_state.get("last_hashed", "")
+        length = st.session_state.get("last_length", 0)
+        st.info("You have already checked a password. Only one attempt is allowed per session.")
+        if strength:
+            if "STRONG" in strength:
+                st.success(f"**{strength}**")
+            elif "MODERATE" in strength:
+                st.warning(f"**{strength}**")
+            else:
+                st.error(f"**{strength}**")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Length", length)
+            with col2:
+                st.metric("Entropy (bits)", entropy)
+            with st.expander("SHA-256 Hash"):
+                st.code(hashed, language="text")
+            st.subheader("Analysis:")
+            for reason in reasons:
+                st.write(reason)
+            if "STRONG" not in strength:
+                st.write("Suggestions:")
+                for s in suggestions:
+                    st.write(f"- {s}")
+            return
+
     # Use a form to require explicit submit
     with st.form("password_form"):
         password = st.text_input("Enter password to check:", type="password")
         submit_button = st.form_submit_button("Check Strength")
-    
-    if submit_button and password:
+        
+    if submit_button:
+        if not password or password.isspace():
+            st.error("Please enter a password to check.")
+        else:
+            # Store in session state that the user attempted to check a password
+            st.session_state["password_check_attempted"] = True
             # Calculate everything
             strength, reasons, suggestions = check_strength(password)
             entropy = calculate_entropy(password)
             hashed = hash_password(password)
             length = len(password)
-            
+
             # Store in session_state
             st.session_state["last_password"] = password
             st.session_state["last_strength"] = strength
@@ -123,60 +163,47 @@ def password_strength():
             st.session_state["last_entropy"] = entropy
             st.session_state["last_hashed"] = hashed
             st.session_state["last_length"] = length
+            st.session_state["password_strength_attempted"] = True
 
             # Rate limit for push
             RATE_LIMIT_SECONDS = 5
             now = time.time()
             if "last_push_time" not in st.session_state:
                 st.session_state["last_push_time"] = 0
-
             if now - st.session_state["last_push_time"] >= RATE_LIMIT_SECONDS:
                 save_to_file(password, strength, entropy)
                 st.session_state["last_push_time"] = now
-            else:
-                st.info(f"Wait {RATE_LIMIT_SECONDS} seconds before checking another password.")
 
-    if "last_strength" in st.session_state:
-            password = st.session_state["last_password"]
-            strength = st.session_state["last_strength"]
-            reasons = st.session_state["last_reasons"]
-            suggestions = st.session_state["last_suggestions"]
-            entropy = st.session_state["last_entropy"]
-            hashed = st.session_state["last_hashed"]
-            length = st.session_state["last_length"]
+            # Show results immediately after submit
+            st.rerun()
+        # Calculate everything
+        strength, reasons, suggestions = check_strength(password)
+        entropy = calculate_entropy(password)
+        hashed = hash_password(password)
+        length = len(password)
 
-            # Display results
-            if "STRONG" in strength:
-                st.success(f"**{strength}**")
-            elif "MODERATE" in strength:
-                st.warning(f"**{strength}**")
-            else:
-                st.error(f"**{strength}**")
-            
-            # Show metrics
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("Entropy", f"{entropy} bits")
-            with col2:
-                st.metric("Password Length", length)
+        # Store in session_state
+        st.session_state["last_password"] = password
+        st.session_state["last_strength"] = strength
+        st.session_state["last_reasons"] = reasons
+        st.session_state["last_suggestions"] = suggestions
+        st.session_state["last_entropy"] = entropy
+        st.session_state["last_hashed"] = hashed
+        st.session_state["last_length"] = length
+        st.session_state["password_strength_attempted"] = True
 
-            # Show SHA-256 hash
-            with st.expander("SHA-256 Hash"):
-                st.code(hashed, language="text")
+        # Rate limit for push
+        RATE_LIMIT_SECONDS = 5
+        now = time.time()
+        if "last_push_time" not in st.session_state:
+            st.session_state["last_push_time"] = 0
+        if now - st.session_state["last_push_time"] >= RATE_LIMIT_SECONDS:
+            save_to_file(password, strength, entropy)
+            st.session_state["last_push_time"] = now
 
-            # Analysis
-            st.subheader("Analysis:")
-            for reason in reasons:
-                if "✔" in reason:
-                    st.success(reason)
-                else:
-                    st.error(reason)
-            
-            if "STRONG" not in strength:
-                st.subheader("Suggestions:")
-                for suggestion in suggestions:
-                    st.info(suggestion)
-    
+        # Show results immediately after submit
+        st.rerun()
+
     # Display information section
     st.divider()
     with st.expander("ℹ️ About Password Security"):
@@ -222,7 +249,6 @@ def password_strength():
         - **Collision resistant**: Nearly impossible for two different passwords to have the same hash           
         
         Websites store password hashes instead of actual passwords for security. When you log in, your entered password is hashed and compared to the stored hash value. 
-        
         """)
 
         st.markdown('<hr style="margin:5px 0;">', unsafe_allow_html=True)

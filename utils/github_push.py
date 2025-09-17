@@ -3,10 +3,22 @@ import base64
 import os
 
 GITHUB_REPO = "poncema4/CyberSmart"
-FILE_PATH = "password_report.txt"
 
-def push_to_github(file_path, commit_message="Updated password report from CyberSmart!", branch="main"):
+def push_to_github(file_path, commit_message=None, branch="main"):
+    # Default commit messages based on file type
+    if commit_message is None:
+        if file_path.endswith("password_report.txt"):
+            commit_message = "Updated password report from CyberSmart!"
+        elif file_path.endswith("feedback.txt"):
+            commit_message = "Updated user feedback from CyberSmart!"
+        else:
+            commit_message = "Updated file from CyberSmart!"
+
     token = os.environ.get("GITHUB_TOKEN")
+    if not token:
+        print("No GitHub token found in environment variables")
+        return
+
     headers = {"Authorization": f"token {token}"}
 
     # Read the file contents
@@ -16,7 +28,7 @@ def push_to_github(file_path, commit_message="Updated password report from Cyber
     content_b64 = base64.b64encode(content_bytes).decode("utf-8")
 
     # Get SHA of the existing file
-    url_get = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{FILE_PATH}"
+    url_get = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{file_path}"
     r = requests.get(url_get, headers=headers)
     if r.status_code == 200:
         sha = r.json()["sha"]
