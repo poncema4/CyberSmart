@@ -179,46 +179,76 @@ def run_step_flow():
             st.rerun()
 
     elif step == 6:
-        st.markdown('<div class="step-title">Thank you for completing CyberSmart!</div>', unsafe_allow_html=True)
+        if "results_calculated" not in st.session_state:
+            # Calculate scores once and store in session state
+            st.session_state.phish_score = st.session_state.get('spot_the_phish_score', 0) * 20
+            st.session_state.match_score = st.session_state.get('password_match_score', 0) * 20
+            st.session_state.final_entropy = st.session_state.get('last_entropy', 0)
+            st.session_state.results_calculated = True
+            
+            # Pre-calculate other metrics
+            security_score = (
+                (st.session_state.phish_score * 0.4) +
+                (st.session_state.match_score * 0.3) +
+                (min(200, st.session_state.final_entropy) * 0.3)
+            )
+            st.session_state.risk_score = 100 - (security_score / 2)
+            
+            # Get recommendations once
+            from utils.recommendations import get_personalized_recommendations
+            st.session_state.recommendations = get_personalized_recommendations(
+                st.session_state.phish_score/20,
+                st.session_state.match_score/20,
+                st.session_state.final_entropy
+            )
+            
+            # Create and store the graph
+            fig, ax = plt.subplots(figsize=(5,2.5))
+            bars = [st.session_state.phish_score, 
+                   st.session_state.match_score, 
+                   min(200, st.session_state.final_entropy)]
+            labels = ["Phishing\nAwareness", "Password\nRecognition", "Password\nStrength"]
+            ax.bar(labels, bars, color=["#4CAF50", "#2196F3", "#FF9800"])
+            ax.set_ylim(0, 200)
+            ax.set_yticks([0, 50, 100, 150, 200])
+            ax.set_ylabel("Score", color='white')
+            ax.set_title("Security Metrics", color='white', pad=10)
+            ax.tick_params(colors='white')
+            plt.xticks(rotation=0, ha='center')
+            ax.set_facecolor('#2b2b2b')
+            fig.patch.set_facecolor('#2b2b2b')
+            plt.tight_layout()
+            buf = BytesIO()
+            plt.savefig(buf, format="png", facecolor='#2b2b2b', edgecolor='none')
+            st.session_state.graph = buf.getvalue()
         
-        # Get scores and normalize them to 0-200 scale
-        phish_score = st.session_state.get('spot_the_phish_score', 0) * 20  # Convert to 0-200 scale
-        match_score = st.session_state.get('password_match_score', 0) * 20   # Convert to 0-200 scale
-        entropy = st.session_state.get('last_entropy', 0)
+        st.markdown('<div class="step-title">Thank you for completing CyberSmart!</div>', unsafe_allow_html=True)
         
         st.markdown('<div class="section-heading" style="color: #ffffff;">Your Results</div>', unsafe_allow_html=True)
         
         # Display metrics in 3 columns
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Phishing Awareness", f"{phish_score}/200")
+            st.metric("Phishing Awareness", f"{st.session_state.phish_score}/200")
         with col2:
-            st.metric("Password Recognition", f"{match_score}/200")
+            st.metric("Password Recognition", f"{st.session_state.match_score}/200")
         with col3:
-            scaled_entropy = min(200, entropy)
+            scaled_entropy = min(200, st.session_state.final_entropy)
             st.metric("Password Entropy", f"{scaled_entropy:.0f}/200")
         
-        # Calculate and display risk score (inverse of security score for risk)
-        security_score = (
-            (phish_score * 0.4) +       # 40% weight to phishing awareness
-            (match_score * 0.3) +       # 30% weight to password recognition
-            (min(200, entropy) * 0.3)    # 30% weight to password strength
-        )
-        risk_score = 100 - (security_score / 2)  # Convert to percentage risk score
-        
-        st.markdown('<div style="color: #ffffff; font-size: 1.8em; font-weight: bold; margin: 10px 0;">Cybersecurity Risk Score: {:.0f}%</div>'.format(risk_score), unsafe_allow_html=True)
+        st.markdown('<div style="color: #ffffff; font-size: 1.8em; font-weight: bold; margin: 10px 0;">Cybersecurity Risk Score: {:.0f}%</div>'.format(st.session_state.risk_score), unsafe_allow_html=True)
 
         st.markdown('---')
         st.markdown('<div class="section-heading" style="color: #ffffff;">Statistics & Recommendations</div>', unsafe_allow_html=True)
 
         # Map risk score to CVSS categories
-        if risk_score < 20:
+        if st.session_state.risk_score < 20:
             cvss_category = "LOW"
             cvss_color = "#4CAF50"  # Material green
-        elif risk_score < 40:
+        elif st.session_state.risk_score < 40:
             cvss_category = "MEDIUM"
             cvss_color = "#FFC107"  # Material amber
-        elif risk_score < 60:
+        elif st.session_state.risk_score < 60:
             cvss_category = "HIGH" 
             cvss_color = "#FF9800"  # Material orange
         else:
@@ -227,37 +257,18 @@ def run_step_flow():
 
         st.markdown(f'<div style="color: {cvss_color}; font-size: 1.5em; font-weight: bold; margin: 10px 0;">CVSS Severity: {cvss_category}</div>', unsafe_allow_html=True)
 
-        # --- Graphs ---
-        fig, ax = plt.subplots(figsize=(5,2.5))
-        bars = [phish_score, match_score, min(200, entropy)]  # All scores 0-200
-        labels = ["Phishing\nAwareness", "Password\nRecognition", "Password\nStrength"]
-        ax.bar(labels, bars, color=["#4CAF50", "#2196F3", "#FF9800"])  # Material colors
-        ax.set_ylim(0, 200)  # 0-200 scale
-        ax.set_yticks([0, 50, 100, 150, 200])  # Set specific y-axis ticks
-        ax.set_ylabel("Score", color='white')
-        ax.set_title("Security Metrics", color='white', pad=10)
-        ax.tick_params(colors='white')
-        # Rotate x-axis labels for better readability with line breaks
-        plt.xticks(rotation=0, ha='center')
-        # Set background color
-        ax.set_facecolor('#2b2b2b')
-        fig.patch.set_facecolor('#2b2b2b')
-        plt.tight_layout()
-        buf = BytesIO()
-        plt.savefig(buf, format="png", facecolor='#2b2b2b', edgecolor='none')
-        st.image(buf.getvalue(), use_container_width=True)
+        # Display the pre-generated graph
+        st.image(st.session_state.graph, use_container_width=True)
 
         # --- Personalized Recommendations ---
         st.markdown('\n<p style="color: #ffffff; font-weight: bold; font-size: 1.2em;">Personalized Recommendations:</p>', unsafe_allow_html=True)
-        from utils.recommendations import get_personalized_recommendations
         
-        # Get recommendations based on scores (normalize scores back to 0-10 for recommendations)
-        recommendations = get_personalized_recommendations(phish_score/20, match_score/20, entropy)
-        for rec in recommendations:
+        # Display pre-calculated recommendations
+        for rec in st.session_state.recommendations:
             st.markdown(f'<p style="color: #ffffff; margin: 0.5em 0;">• {rec}</p>', unsafe_allow_html=True)
 
         st.markdown('---')
-        st.markdown('<div class="section-heading" style="color: #ffffff;">User Feedback Carousel</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-heading" style="color: #ffffff;">User Feedback </div>', unsafe_allow_html=True)
         
         # Load all feedback from file for persistent display
         feedbacks = []
