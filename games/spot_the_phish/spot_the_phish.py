@@ -1,6 +1,8 @@
 import streamlit as st
 import random
 
+from utils.ml_scoring import get_phishing_score
+
 def spot_the_phish():
     st.header("Spot the Phish")
     st.write("""

@@ -4,8 +4,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
 from io import BytesIO
-from sklearn.neural_network import MLPClassifier
+import matplotlib.pyplot as plt
 from utils.github_push import push_to_github
+from utils.ml_scoring import get_password_score, get_phishing_score, get_match_score
 from games.spot_the_phish.spot_the_phish import spot_the_phish
 from games.password_match.password_match import password_match
 from games.password_generator.password_generator import password_generator
