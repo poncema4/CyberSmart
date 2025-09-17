@@ -1,51 +1,66 @@
+import streamlit as st
 import re
 import hashlib
 import math
-from datetime import datetime
-import streamlit as st
-from utils.github_push import push_to_github
 import time
+from datetime import datetime
+from utils.github_push import push_to_github
 
-def check_strength(password):
+def check_strength(password: str) -> tuple[str, list[str], list[str]]:
+    """
+    Check the strength of the given password and provide reasons and suggestions
+    """
     reasons = []
     suggestions = []
 
-    # Check if the password is at least 8 characters long
+    """
+    Check if the password is at least 8 characters long
+    """
     if len(password) < 8:
         reasons.append("✘ Less than 8 characters")
         suggestions.append("Use at least 8 characters")
     else:
         reasons.append("✔ Good length")
 
-    # Check for uppercase letters
+    """
+    Check for uppercase letters
+    """
     if not re.search(r"[A-Z]", password):
         reasons.append("✘ No uppercase letters")
         suggestions.append("Add uppercase letters (A-Z)")
     else:
         reasons.append("✔ Has uppercase letter(s)")
 
-    # Check for lowercase letters
+    """
+    Check for lowercase letters
+    """
     if not re.search(r"[a-z]", password):
         reasons.append("✘ No lowercase letters")
         suggestions.append("Add lowercase letters (a-z)")
     else:
         reasons.append("✔ Has lowercase letter(s)")
 
-    # Check for numbers
+    """
+    Check for numbers
+    """
     if not re.search(r"[0-9]", password):
         reasons.append("✘ No numbers")
         suggestions.append("Include numbers (0-9)")
     else:
         reasons.append("✔ Has number(s)")
 
-    # Check for symbols/special characters
+    """
+    Check for symbols/special characters
+    """
     if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
         reasons.append("✘ No special characters")
         suggestions.append("Include symbols like !@#$%^")
     else:
         reasons.append("✔ Has special character(s)")
 
-    # Calculate score by the sum of boolean checks
+    """
+    Calculate score by the sum of boolean checks
+    """
     score = sum([
         len(password) >= 8,
         bool(re.search(r"[A-Z]", password)),
@@ -54,7 +69,9 @@ def check_strength(password):
         bool(re.search(r"[!@#$%^&*(),.?\":{}|<>]", password))
     ])
 
-    # Determine strength category based on score
+    """
+    Determine strength category based on score
+    """
     if score == 5:
         strength = "Password is STRONG"
     elif 4 >= score >= 3:
@@ -64,7 +81,10 @@ def check_strength(password):
 
     return strength, reasons, suggestions
 
-def calculate_entropy(password):
+def calculate_entropy(password: str) -> float:
+    """
+    Calculate the entropy of the password in bits
+    """
     charset_size = 0
 
     if re.search(r"[a-z]", password):
@@ -80,33 +100,37 @@ def calculate_entropy(password):
         return 0
 
     entropy = len(password) * math.log2(charset_size)
+
     return round(entropy, 2)
 
-def hash_password(password):
+def hash_password(password: str) -> str:
+    """
+    Hash the password using SHA-256
+    """
     return hashlib.sha256(password.encode()).hexdigest()
 
-def save_to_file(password, strength, entropy):
+def save_to_file(password: str, strength: int, entropy: float) -> None:
+    """
+    Save the password check result to password_report.txt and attempt to push to Github
+    """
     line = f"{datetime.now()} | Password: {'*' * len(password)} | Length: {len(password)} | Strength: {strength} | Entropy: {entropy} bits\n"
     with open("reports/password_report.txt", "a", encoding="utf-8") as file:
         file.write(line)
 
-    # Push to Github
     try:
         push_to_github("reports/password_report.txt", commit_message="Updated password report from CyberSmart!", branch="main")
+
     except Exception as e:
         print(f"Failed to push to GitHub: {e}")
 
-def password_strength():
+def password_strength() -> None:
     st.header("Password Strength Checker")
     st.write("""
         Enter a password below to analyze its strength, entropy, and security. 
         Get detailed feedback and suggestions for improvements in your current password!
     """)
 
-
-    # Only allow one password check per session
     if st.session_state.get("password_strength_attempted", False):
-        # Show the previous results
         password = st.session_state.get("last_password", "")
         strength = st.session_state.get("last_strength", "")
         reasons = st.session_state.get("last_reasons", [])
@@ -114,7 +138,8 @@ def password_strength():
         entropy = st.session_state.get("last_entropy", 0)
         hashed = st.session_state.get("last_hashed", "")
         length = st.session_state.get("last_length", 0)
-        st.info("You have already checked a password. Only one attempt is allowed per session.")
+        
+        st.info("You have entered a password to check, please see the results below.")
         if strength:
             if "STRONG" in strength:
                 st.success(f"**{strength}**")
@@ -122,6 +147,7 @@ def password_strength():
                 st.warning(f"**{strength}**")
             else:
                 st.error(f"**{strength}**")
+
             col1, col2 = st.columns(2)
             with col1:
                 st.metric("Length", length)
@@ -129,6 +155,7 @@ def password_strength():
                 st.metric("Entropy (bits)", entropy)
             with st.expander("SHA-256 Hash"):
                 st.code(hashed, language="text")
+
             st.subheader("Analysis:")
             for reason in reasons:
                 st.write(reason)
@@ -138,7 +165,6 @@ def password_strength():
                     st.write(f"- {s}")
             return
 
-    # Use a form to require explicit submit
     with st.form("password_form"):
         password = st.text_input("Enter password to check:", type="password")
         submit_button = st.form_submit_button("Check Strength")
@@ -147,15 +173,12 @@ def password_strength():
         if not password or password.isspace():
             st.error("Please enter a password to check.")
         else:
-            # Store in session state that the user attempted to check a password
             st.session_state["password_check_attempted"] = True
-            # Calculate everything
             strength, reasons, suggestions = check_strength(password)
             entropy = calculate_entropy(password)
             hashed = hash_password(password)
             length = len(password)
 
-            # Store in session_state
             st.session_state["last_password"] = password
             st.session_state["last_strength"] = strength
             st.session_state["last_reasons"] = reasons
@@ -165,7 +188,6 @@ def password_strength():
             st.session_state["last_length"] = length
             st.session_state["password_strength_attempted"] = True
 
-            # Rate limit for push
             RATE_LIMIT_SECONDS = 5
             now = time.time()
             if "last_push_time" not in st.session_state:
@@ -174,10 +196,8 @@ def password_strength():
                 save_to_file(password, strength, entropy)
                 st.session_state["last_push_time"] = now
 
-            # Show results immediately after submit
             st.rerun()
 
-    # Display information section
     st.divider()
     with st.expander("ℹ️ About Password Security"):
         st.write("""
@@ -235,7 +255,6 @@ def password_strength():
         - Use passphrases (multiple random words)
         """)
     
-    # Display log file info
     with st.expander("📁 Password Check Logs"):
         st.write("""
         Password checks are logged to `password_report.txt` with:
@@ -247,8 +266,7 @@ def password_strength():
         This helps track password security practices over time.
         """)
 
-        # Password report file link
         st.markdown(
-            "[View Password Report on GitHub](https://github.com/poncema4/CyberSmart/blob/main/password_report.txt)",
+            "[View Password Report on GitHub](https://github.com/poncema4/CyberSmart/blob/main/reports/password_report.txt)",
             unsafe_allow_html=True
         )

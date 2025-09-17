@@ -1,7 +1,7 @@
 import streamlit as st
 import random
 
-def password_match():
+def password_match() -> int | None:
     st.header("Password Match")
     st.write("""
         Determine if each password would be considered Weak or Strong. Select the correct strength category for each password and get your final score!
@@ -26,8 +26,10 @@ def password_match():
 
     if "match_answers" not in st.session_state:
         st.session_state.match_answers = {}
+
     if "password_order" not in st.session_state:
         st.session_state.password_order = random.sample(list(passwords.keys()), len(passwords))
+        
     password_order = st.session_state.password_order
 
     for idx, p in enumerate(password_order, start=1):

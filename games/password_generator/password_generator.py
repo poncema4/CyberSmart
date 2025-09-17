@@ -2,7 +2,7 @@ import streamlit as st
 import random
 import string
 
-def password_generator():
+def password_generator() -> None:
     st.header("Password Generator")
     st.write("""
         Select your password criteria, then generate a strong password!
@@ -42,5 +42,7 @@ def password_generator():
 
     if password:
         st.subheader("Your generated password:")
-        # Automatically generate a code block with the password to be able to copy it easily
+        """
+        Automatically generate a code block with the password to be able to copy it easily
+        """
         st.code(password, language="text")

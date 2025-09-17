@@ -1,9 +1,7 @@
 import streamlit as st
 import random
 
-from utils.ml_scoring import get_phishing_score
-
-def spot_the_phish():
+def spot_the_phish() -> int | None:
     st.header("Spot the Phish")
     st.write("""
         Can you spot the phishing email? Select the correct answer for each question and see how good you are at spotting phishing vulnerabilities!
@@ -158,8 +156,10 @@ def spot_the_phish():
 
     if "phish_answers" not in st.session_state:
         st.session_state.phish_answers = {}
+
     if "phish_order" not in st.session_state:
         st.session_state.phish_order = random.sample(range(len(questions)), len(questions))
+        
     question_order = st.session_state.phish_order
 
     for idx, q in enumerate(question_order, start=1):
