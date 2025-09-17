@@ -92,7 +92,7 @@ def save_to_file(password, strength, entropy):
 
     # Push to Github
     try:
-        push_to_github("password_report.txt", commit_message="Updated password report from CyberSmart!", branch="main")
+        push_to_github("reports/password_report.txt", commit_message="Updated password report from CyberSmart!", branch="main")
     except Exception as e:
         print(f"Failed to push to GitHub: {e}")
 
@@ -176,33 +176,6 @@ def password_strength():
 
             # Show results immediately after submit
             st.rerun()
-        # Calculate everything
-        strength, reasons, suggestions = check_strength(password)
-        entropy = calculate_entropy(password)
-        hashed = hash_password(password)
-        length = len(password)
-
-        # Store in session_state
-        st.session_state["last_password"] = password
-        st.session_state["last_strength"] = strength
-        st.session_state["last_reasons"] = reasons
-        st.session_state["last_suggestions"] = suggestions
-        st.session_state["last_entropy"] = entropy
-        st.session_state["last_hashed"] = hashed
-        st.session_state["last_length"] = length
-        st.session_state["password_strength_attempted"] = True
-
-        # Rate limit for push
-        RATE_LIMIT_SECONDS = 5
-        now = time.time()
-        if "last_push_time" not in st.session_state:
-            st.session_state["last_push_time"] = 0
-        if now - st.session_state["last_push_time"] >= RATE_LIMIT_SECONDS:
-            save_to_file(password, strength, entropy)
-            st.session_state["last_push_time"] = now
-
-        # Show results immediately after submit
-        st.rerun()
 
     # Display information section
     st.divider()
