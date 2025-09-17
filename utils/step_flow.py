@@ -194,6 +194,32 @@ def run_step_flow():
             )
             st.session_state.risk_score = 100 - (security_score / 2)
             
+            # Create and save the graph
+            import matplotlib.pyplot as plt
+            from io import BytesIO
+            
+            fig, ax = plt.subplots(figsize=(5,2.5))
+            bars = [st.session_state.phish_score, 
+                   st.session_state.match_score, 
+                   min(200, st.session_state.final_entropy)]
+            labels = ["Phishing\nAwareness", "Password\nRecognition", "Password\nStrength"]
+            ax.bar(labels, bars, color=["#4CAF50", "#2196F3", "#FF9800"])
+            ax.set_ylim(0, 200)
+            ax.set_yticks([0, 50, 100, 150, 200])
+            ax.set_ylabel("Score", color='white')
+            ax.set_title("Security Metrics", color='white', pad=10)
+            ax.tick_params(colors='white')
+            plt.xticks(rotation=0, ha='center')
+            ax.set_facecolor('#2b2b2b')
+            fig.patch.set_facecolor('#2b2b2b')
+            plt.tight_layout()
+            
+            # Save graph to session state
+            buf = BytesIO()
+            plt.savefig(buf, format="png", facecolor='#2b2b2b', edgecolor='none')
+            plt.close()
+            st.session_state.graph = buf.getvalue()
+            
             # Get recommendations once
             from utils.recommendations import get_personalized_recommendations
             st.session_state.recommendations = get_personalized_recommendations(
