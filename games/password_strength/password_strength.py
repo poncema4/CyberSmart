@@ -260,6 +260,7 @@ def password_strength() -> None:
         Password checks are logged to `password_report.txt` with:
         - Timestamp of check
         - Masked password (actual password not stored)
+        - Length
         - Strength assessment
         - Entropy value
         

@@ -1,16 +1,15 @@
 import streamlit as st
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
 from io import BytesIO
-import matplotlib.pyplot as plt
 from utils.github_push import push_to_github
 from utils.cyber_smart import get_password_score, get_phishing_score, get_match_score
 from games.spot_the_phish.spot_the_phish import spot_the_phish
 from games.password_match.password_match import password_match
 from games.password_generator.password_generator import password_generator
 from games.password_strength.password_strength import password_strength
+from utils.recommendations import get_personalized_recommendations
 
 STEPS = [
     "intro",
@@ -22,7 +21,7 @@ STEPS = [
     "results"
 ]
 
-def run_step_flow():
+def run_step_flow() -> None:
     st.markdown("""
     <style>
     .step-title {font-size:2.2rem;font-weight:700;margin-bottom:0.5em;}
@@ -75,14 +74,22 @@ def run_step_flow():
 
     if "step" not in st.session_state:
         st.session_state.step = 0
+
     step = st.session_state.step
 
-    def next_step():
-        st.session_state.step = step + 1
+    def next_step() -> None:
+        """
+        Move to the next step in the steps instruction to analyze and correctly update the step state variable
+        """
+        st.session_state.step += 1
 
+    """
+    CyberSmart Dashboard
+    """
     if step == 0:
         st.markdown('<div class="step-title">Welcome to CyberSmart!</div>', unsafe_allow_html=True)
         st.markdown('<div class="step-desc">CyberSmart is an interactive cybersecurity course. You will go through a series of activities and games to learn and test your knowledge. Click Start to begin!</div>', unsafe_allow_html=True)
+        st.markdown("<br>", unsafe_allow_html=True)
         with st.form("start_form"):
             if st.form_submit_button("Start"):
                 next_step()
@@ -94,12 +101,12 @@ def run_step_flow():
         if "spot_the_phish_score" not in st.session_state:
             score = spot_the_phish()
             if score is not None:
-                st.success("Response recorded!")
                 with st.form("phish_next_form"):
                     if st.form_submit_button("Continue"):
                         next_step()
                         st.rerun()
         else:
+            st.markdown("<br>", unsafe_allow_html=True)
             st.success("Step completed!")
             with st.form("phish_continue_form"):
                 if st.form_submit_button("Continue"):
@@ -112,12 +119,12 @@ def run_step_flow():
         if "password_match_score" not in st.session_state:
             score = password_match()
             if score is not None:
-                st.success("Response recorded!")
                 with st.form("match_next_form"):
                     if st.form_submit_button("Continue"):
                         next_step()
                         st.rerun()
         else:
+            st.markdown("<br>", unsafe_allow_html=True)
             st.success("Step completed!")
             with st.form("match_continue_form"):
                 if st.form_submit_button("Continue"):
@@ -126,7 +133,7 @@ def run_step_flow():
 
     elif step == 3:
         st.markdown('<div class="step-title">Step 3: Password Generator</div>', unsafe_allow_html=True)
-        st.markdown('<div class="step-desc">Experiment with generating strong passwords. When you are ready, click Next.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="step-desc">Experiment with generating strong passwords. When you are ready, click Continue.</div>', unsafe_allow_html=True)
         password_generator()
         with st.form("gen_next_form"):
             if st.form_submit_button("Continue"):
@@ -135,9 +142,8 @@ def run_step_flow():
 
     elif step == 4:
         st.markdown('<div class="step-title">Step 4: Password Strength Checker</div>', unsafe_allow_html=True)
-        st.markdown('<div class="step-desc">Test the strength of your own passwords. When finished, click Next.</div>', unsafe_allow_html=True)
+        st.markdown('<div class="step-desc">Test the strength of your own password. <b>One attempt only.</b> Your score will be recorded.</div>', unsafe_allow_html=True)
         password_strength()
-        # Only show continue button after a valid password check
         if st.session_state.get("password_strength_attempted", False) and st.session_state.get("last_strength", None):
             with st.form("strength_next_form"):
                 if st.form_submit_button("Continue"):
@@ -148,6 +154,7 @@ def run_step_flow():
         st.markdown('<div class="step-title">Step 5: Feedback</div>', unsafe_allow_html=True)
         st.markdown('<div class="step-desc">Please provide feedback on your experience (max 500 characters).</div>', unsafe_allow_html=True)
         
+        st.markdown("<br>", unsafe_allow_html=True)
         feedback_form = st.form("feedback_form")
         with feedback_form:
             feedback = st.text_area(
@@ -160,12 +167,10 @@ def run_step_flow():
         
         if submit_feedback:
             if feedback.strip():
-                # Save feedback locally
                 with open("reports/feedback.txt", "a", encoding="utf-8") as f:
                     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                     f.write(f"[{timestamp}] {feedback.strip()}\n-------------------\n")
                 
-                # Push to GitHub
                 try:
                     push_to_github("reports/feedback.txt")
                 except Exception as e:
@@ -180,13 +185,30 @@ def run_step_flow():
 
     elif step == 6:
         if "results_calculated" not in st.session_state:
-            # Calculate scores once and store in session state
+
+            phish_raw = float(st.session_state.get('spot_the_phish_score', 0))
+            match_raw = float(st.session_state.get('password_match_score', 0))
+            entropy_raw = float(st.session_state.get('last_entropy', 0))
+            
+            st.session_state.phish_normalized = min(200, get_phishing_score(phish_raw, 10))
+            st.session_state.match_normalized = min(200, get_match_score(match_raw, 10))
+            st.session_state.entropy_normalized = min(200, entropy_raw)
+            
+            if 'last_password' in st.session_state:
+                password = st.session_state.last_password
+                base_score = get_password_score(password)
+                st.session_state.final_score = min(200, base_score * 200)
+            else:
+                st.session_state.final_score = min(200, (
+                    st.session_state.phish_normalized + 
+                    st.session_state.match_normalized + 
+                    st.session_state.entropy_normalized
+                ) / 3)
             st.session_state.phish_score = st.session_state.get('spot_the_phish_score', 0) * 20
             st.session_state.match_score = st.session_state.get('password_match_score', 0) * 20
             st.session_state.final_entropy = st.session_state.get('last_entropy', 0)
             st.session_state.results_calculated = True
             
-            # Pre-calculate other metrics
             security_score = (
                 (st.session_state.phish_score * 0.4) +
                 (st.session_state.match_score * 0.3) +
@@ -194,11 +216,7 @@ def run_step_flow():
             )
             st.session_state.risk_score = 100 - (security_score / 2)
             
-            # Create and save the graph
-            import matplotlib.pyplot as plt
-            from io import BytesIO
-            
-            fig, ax = plt.subplots(figsize=(5,2.5))
+            fig, ax = plt.subplots(figsize=(5, 2.5))
             bars = [st.session_state.phish_score, 
                    st.session_state.match_score, 
                    min(200, st.session_state.final_entropy)]
@@ -214,21 +232,17 @@ def run_step_flow():
             fig.patch.set_facecolor('#2b2b2b')
             plt.tight_layout()
             
-            # Save graph to session state
             buf = BytesIO()
             plt.savefig(buf, format="png", facecolor='#2b2b2b', edgecolor='none')
             plt.close()
             st.session_state.graph = buf.getvalue()
             
-            # Get recommendations once
-            from utils.recommendations import get_personalized_recommendations
             st.session_state.recommendations = get_personalized_recommendations(
                 st.session_state.phish_score/20,
                 st.session_state.match_score/20,
                 st.session_state.final_entropy
             )
-            
-            # Create and store the graph
+
             fig, ax = plt.subplots(figsize=(5,2.5))
             bars = [st.session_state.phish_score, 
                    st.session_state.match_score, 
@@ -248,55 +262,118 @@ def run_step_flow():
             plt.savefig(buf, format="png", facecolor='#2b2b2b', edgecolor='none')
             st.session_state.graph = buf.getvalue()
         
-        st.markdown('<div class="step-title">Thank you for completing CyberSmart!</div>', unsafe_allow_html=True)
+        st.markdown('<div class="step-title" style="margin-bottom:5px;">Thank you for completing CyberSmart!</div>', unsafe_allow_html=True)
         
-        st.markdown('<div class="section-heading" style="color: #ffffff;">Your Results</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-heading" style="color: #ffffff; margin-top:10px;">Your Results</div>', unsafe_allow_html=True)
         
-        # Display metrics in 3 columns
+        fig, ax = plt.subplots(figsize=(8, 8), subplot_kw=dict(projection='polar'))
+        
+        categories = ['Phishing\nAwareness', 'Password\nSkills', 'Password\nEntropy']
+        values = [
+            min(1.0, st.session_state.phish_normalized / 200),
+            min(1.0, st.session_state.match_normalized / 200),
+            min(1.0, st.session_state.entropy_normalized / 200)
+        ]
+        values += values[:1]
+        
+        angles = np.linspace(0, 2*np.pi, len(categories), endpoint=False)
+        angles = np.concatenate((angles, [angles[0]]))
+        
+        ax.plot(angles, values, 'o-', linewidth=2, color='#2E86C1')
+        ax.fill(angles, values, alpha=0.25, color='#2E86C1')
+        ax.set_xticks(angles[:-1])
+        ax.set_xticklabels(categories, size=10)
+        ax.set_ylim(0, 1.0)
+        ax.grid(True, alpha=0.3)
+        plt.title("Security Skills Analysis", pad=20, size=12)
+        
+        buf = BytesIO()
+        plt.savefig(buf, format='png', bbox_inches='tight', dpi=300)
+        buf.seek(0)
+        plt.close()
+        
+        st.markdown('<h3 style="font-size: 1.2em;">Score Breakdown</h3>', unsafe_allow_html=True)
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Phishing Awareness", f"{st.session_state.phish_score}/200")
+            st.metric(
+                "Phishing Awareness", 
+                f"{st.session_state.phish_normalized:.0f}/200",
+                help="Score based on phishing email identification"
+            )
         with col2:
-            st.metric("Password Recognition", f"{st.session_state.match_score}/200")
+            st.metric(
+                "Password Skills", 
+                f"{st.session_state.match_normalized:.0f}/200",
+                help="Score based on password strength assessment"
+            )
         with col3:
-            scaled_entropy = min(200, st.session_state.final_entropy)
-            st.metric("Password Entropy", f"{scaled_entropy:.0f}/200")
+            st.metric(
+                "Password Entropy", 
+                f"{st.session_state.entropy_normalized:.0f}/200",
+                help="Score based on password complexity analysis"
+            )
         
-        st.markdown('<div style="color: #ffffff; font-size: 1.8em; font-weight: bold; margin: 10px 0;">Cybersecurity Risk Score: {:.0f}%</div>'.format(st.session_state.risk_score), unsafe_allow_html=True)
+        st.markdown('<h3 style="font-size: 1.2em;">Skills Analysis</h3>', unsafe_allow_html=True)
+        st.image(buf, use_container_width=True)
+
+        security_score = (
+            st.session_state.phish_normalized +
+            st.session_state.match_normalized +
+            st.session_state.entropy_normalized
+        ) / 3
+
+        risk_score = max(0, min(100, 100 - (security_score / 2)))
+        
+        if risk_score < 25:
+            risk_level = "Low Risk"
+            risk_color = "#4CAF50"
+        elif risk_score < 50:
+            risk_level = "Moderate Risk"
+            risk_color = "#FFA500"
+        else:
+            risk_level = "High Risk"
+            risk_color = "#FF0000"
+        
+        st.markdown('<h3 style="font-size: 1.2em;">Security Risk Assessment</h3>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div style="text-align: center; padding: 10px; '
+            f'background-color: {risk_color}10; border-radius: 8px; '
+            f'margin: 10px 0; border: 1px solid {risk_color}30;">'
+            f'<div style="color: {risk_color}; font-size: 1.3em; margin: 5px 0;">'
+            f'Risk Score: {risk_score:.0f}%</div>'
+            f'<div style="color: {risk_color}; font-size: 1.1em;">{risk_level}</div>'
+            '</div>',
+            unsafe_allow_html=True
+        )
 
         st.markdown('---')
         st.markdown('<div class="section-heading" style="color: #ffffff;">Statistics & Recommendations</div>', unsafe_allow_html=True)
-
-        # Map risk score to CVSS categories
+    
         if st.session_state.risk_score < 20:
             cvss_category = "LOW"
-            cvss_color = "#4CAF50"  # Material green
+            cvss_color = "#4CAF50"
         elif st.session_state.risk_score < 40:
             cvss_category = "MEDIUM"
-            cvss_color = "#FFC107"  # Material amber
+            cvss_color = "#FFC107"
         elif st.session_state.risk_score < 60:
             cvss_category = "HIGH" 
-            cvss_color = "#FF9800"  # Material orange
+            cvss_color = "#FF9800"
         else:
             cvss_category = "CRITICAL"
-            cvss_color = "#F44336"  # Material red
+            cvss_color = "#F44336"
 
         st.markdown(f'<div style="color: {cvss_color}; font-size: 1.5em; font-weight: bold; margin: 10px 0;">CVSS Severity: {cvss_category}</div>', unsafe_allow_html=True)
 
-        # Display the pre-generated graph
         st.image(st.session_state.graph, use_container_width=True)
 
-        # --- Personalized Recommendations ---
         st.markdown('\n<p style="color: #ffffff; font-weight: bold; font-size: 1.2em;">Personalized Recommendations:</p>', unsafe_allow_html=True)
-        
-        # Display pre-calculated recommendations
+
         for rec in st.session_state.recommendations:
             st.markdown(f'<p style="color: #ffffff; margin: 0.5em 0;">• {rec}</p>', unsafe_allow_html=True)
 
         st.markdown('---')
         st.markdown('<div class="section-heading" style="color: #ffffff;">User Feedback </div>', unsafe_allow_html=True)
         
-        # Load all feedback from file for persistent display
         feedbacks = []
         try:
             with open("reports/feedback.txt", "r", encoding="utf-8") as f:
@@ -319,12 +396,10 @@ def run_step_flow():
         st.markdown('---')
         st.markdown('<div class="section-heading" style="color: #ffffff;">Thank you for participating!</div>', unsafe_allow_html=True)
         
-        # Return to main menu button at the bottom
         with st.form("return_form"):
             if st.form_submit_button("Return to Main Menu", use_container_width=True):
-                # Reset all session state variables
                 for key in list(st.session_state.keys()):
-                    if key != "step":  # Keep step until after rerun
+                    if key != "step":
                         del st.session_state[key]
                 st.session_state.step = 0
                 st.rerun()
