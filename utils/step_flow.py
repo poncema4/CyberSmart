@@ -6,7 +6,7 @@ from datetime import datetime
 from io import BytesIO
 import matplotlib.pyplot as plt
 from utils.github_push import push_to_github
-from utils.ml_scoring import get_password_score, get_phishing_score, get_match_score
+from utils.cyber_smart import get_password_score, get_phishing_score, get_match_score
 from games.spot_the_phish.spot_the_phish import spot_the_phish
 from games.password_match.password_match import password_match
 from games.password_generator.password_generator import password_generator
@@ -24,54 +24,54 @@ STEPS = [
 
 def run_step_flow():
     st.markdown("""
-<style>
-.step-title {font-size:2.2rem;font-weight:700;margin-bottom:0.5em;}
-.step-desc {font-size:1.1rem;color:#555;}
-.feedback-container {
-    margin: 20px 0;
-    padding: 1em;
-    border-radius: 8px;
-}
-.feedback-item {
-    background: #f1f3f6;
-    padding: 20px;
-    margin-bottom: 15px;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    color: #333;
-    font-size: 1rem;
-}
-.results-score {
-    font-size: 2.5em;
-    font-weight: bold;
-    color: #1a1a1a;
-    margin: 20px 0;
-}
-.score-metrics {
-    margin: 2em 0;
-}
-.section-heading {
-    font-size: 1.5em;
-    font-weight: 600;
-    margin: 1.5em 0 1em;
-    color: #1a1a1a;
-}
-.return-button {
-    margin-top: 2rem;
-    padding: 0.75rem 1.5rem;
-    background: #4CAF50;
-    color: white;
-    border-radius: 8px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-.return-button:hover {
-    background: #45a049;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-</style>
-""", unsafe_allow_html=True)
+    <style>
+    .step-title {font-size:2.2rem;font-weight:700;margin-bottom:0.5em;}
+    .step-desc {font-size:1.1rem;color:#555;}
+    .feedback-container {
+        margin: 20px 0;
+        padding: 1em;
+        border-radius: 8px;
+    }
+    .feedback-item {
+        background: #f1f3f6;
+        padding: 20px;
+        margin-bottom: 15px;
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        color: #333;
+        font-size: 1rem;
+    }
+    .results-score {
+        font-size: 2.5em;
+        font-weight: bold;
+        color: #1a1a1a;
+        margin: 20px 0;
+    }
+    .score-metrics {
+        margin: 2em 0;
+    }
+    .section-heading {
+        font-size: 1.5em;
+        font-weight: 600;
+        margin: 1.5em 0 1em;
+        color: #1a1a1a;
+    }
+    .return-button {
+        margin-top: 2rem;
+        padding: 0.75rem 1.5rem;
+        background: #4CAF50;
+        color: white;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .return-button:hover {
+        background: #45a049;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
     if "step" not in st.session_state:
         st.session_state.step = 0

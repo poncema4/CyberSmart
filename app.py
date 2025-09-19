@@ -1,7 +1,6 @@
-import streamlit as st
 from utils.step_flow import run_step_flow
 
-def main():
+def main() -> None:
     run_step_flow()
 
 if __name__ == "__main__":
