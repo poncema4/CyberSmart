@@ -113,7 +113,8 @@ def save_to_file(password: str, strength: int, entropy: float) -> None:
     """
     Save the password check result to password_report.txt and attempt to push to Github
     """
-    line = f"{datetime.now()} | Password: {'*' * len(password)} | Length: {len(password)} | Strength: {strength} | Entropy: {entropy} bits\n"
+    local_time = datetime.now().astimezone()
+    line = f"{local_time.strftime('%Y-%m-%d %H:%M:%S')} | Password: {'*' * len(password)} | Length: {len(password)} | Strength: {strength} | Entropy: {entropy} bits\n"
     with open("reports/password_report.txt", "a", encoding="utf-8") as file:
         file.write(line)
 

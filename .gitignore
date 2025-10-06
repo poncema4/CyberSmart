@@ -1,16 +1,76 @@
+# Python cache and compiled files
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.so
+*.dll
+*.dylib
+
+# Virtual environments
 .env
 .venv
 env/
 venv/
 ENV/
+env.bak/
+venv.bak/
+
+# Build and distribution
 build/
 dist/
 *.egg-info/
+*.egg
+
+# Sensitive database files
+data/
+*.db
+*.sqlite
+*.sqlite3
+cybersmart.db
+
+# Sensitive configuration and scripts
+reset_db.py
+.env
+.env.local
+.env.production
+.env.staging
+
+# API keys and secrets
+*.key
+*.pem
+*.p12
+config.json
+secrets.json
+
+# IDE and system files
 .DS_Store
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+
+# Streamlit cache
 .streamlit/
+
+# Development containers
 .devcontainer/
+
+# Git and GitHub
 .github/
+
+# OS specific
+Thumbs.db
+ehthumbs.db
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
