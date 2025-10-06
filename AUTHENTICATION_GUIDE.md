@@ -57,7 +57,6 @@ Welcome Screen → Login/Register → Exam Selection → Assessment → Results 
 ### 🎨 **User Interface Components**
 
 ```css
-/* Beautiful gradient styling for authentication */
 .auth-title {
     color: #1a1a1a;
     font-size: 3rem;
@@ -292,9 +291,3 @@ def get_global_averages(self) -> Dict:
 - **Data Privacy:** Local SQLite storage keeps user data secure
 - **Scalable Analytics:** System supports unlimited users and assessments
 - **Security Best Practices:** Industry-standard authentication and data protection
-
----
-
-<p align="center">
-  <strong>🔐 Secure • 📊 Comprehensive • 🎨 Beautiful</strong>
-</p>

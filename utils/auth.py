@@ -77,7 +77,7 @@ def show_auth_page() -> Optional[dict]:
     if st.session_state.user_authenticated and st.session_state.user_info:
         return st.session_state.user_info
 
-    st.markdown('<h1 class="auth-title">🔐 CyberSmart</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="auth-title">CyberSmart 🛡️</h1>', unsafe_allow_html=True)
     st.markdown('<p class="auth-subtitle">Secure your digital future</p>', unsafe_allow_html=True)
 
     col1, col2 = st.columns(2)

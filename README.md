@@ -59,7 +59,6 @@
 3. **Set up environment variables (optional):**
 
    ```bash
-   # For GitHub integration (optional)
    export GITHUB_TOKEN=your_github_token
    ```
 
