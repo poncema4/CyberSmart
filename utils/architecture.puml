@@ -1,11 +1,5 @@
 @startuml CyberSmart_Platform_Architecture
 
-!define LIGHTBLUE #E3F2FD
-!define LIGHTGREEN #E8F5E8
-!define LIGHTYELLOW #FFF9C4
-!define LIGHTPINK #FCE4EC
-!define LIGHTGRAY #F5F5F5
-
 skinparam backgroundColor #FFFFFF
 skinparam roundcorner 15
 skinparam packageStyle rectangle
@@ -13,82 +7,56 @@ skinparam ArrowColor #2196F3
 skinparam ArrowFontColor #1976D2
 skinparam classFontStyle bold
 skinparam classBorderColor #666666
+skinparam packageTitleFontColor #0D47A1
+skinparam packageTitleFontSize 16
+skinparam packageBorderColor #BDBDBD
 
-title CyberSmart Platform - System Architecture & User Journey
+title **CyberSmart Platform - System Architecture**
 
-actor Student as student
-participant "Streamlit\nDashboard" as dashboard LIGHTBLUE
-participant "Assessment\nEngine" as assessment LIGHTGREEN
-participant "ML Analysis\nSystem" as ml LIGHTYELLOW
-participant "Local Storage\n(JSON)" as storage LIGHTGRAY
-participant "GitHub\nIntegration" as github LIGHTPINK
+' Switch to vertical layout
+top to bottom direction
 
-== 1. Student Entry & Profile Creation ==
-student -> dashboard: Access Platform
-dashboard -> dashboard: Initialize Session
-dashboard -> storage: Check/Create User Profile
-storage --> dashboard: User Data Retrieved
+' === Phase I ===
+package "Phase I - Data Collection" as Phase1{
+  rectangle "• Baseline survey on awareness & habits\n• In-game actions (clicks, choices)\n• Password creation & reflection activities\n• Optional open-ended feedback" as P1
+}
 
-== 2. Learning Assessment Phase ==
-dashboard -> assessment: Start Cybersecurity Survey
-assessment -> student: Present Knowledge Questions
-student -> assessment: Submit Responses
-assessment -> ml: Analyze Survey Responses
-ml -> ml: Calculate Knowledge Score
-ml --> assessment: Return Baseline Score
-assessment -> storage: Store Survey Results
-assessment --> dashboard: Display Initial Assessment
+' === Phase II ===
+package "Phase II - Data Processing & Validation" as Phase2{
+  rectangle "• Validate data (check missing/inconsistent text)\n• Pseudonymization (replace personal info with tokens)\n• Normalize data (standardized scale)" as P2
+}
 
-== 3. Interactive Learning Modules ==
-dashboard -> student: Show Available Activities
-alt Phishing Awareness Module
-    student -> assessment: Select Phishing Game
-    assessment -> student: Present Email Scenarios
-    student -> assessment: Identify Phish/Legitimate
-    assessment -> ml: Score Responses
-    ml -> ml: Pattern Recognition Analysis
-    ml --> assessment: Phishing Awareness Score
-else Password Security Module  
-    student -> assessment: Select Password Game
-    assessment -> student: Present Password Scenarios
-    student -> assessment: Create/Evaluate Passwords
-    assessment -> ml: Analyze Password Strength
-    ml -> ml: Entropy & Security Calculation
-    ml --> assessment: Password Security Score
-else Social Engineering Module
-    student -> assessment: Select Social Engineering Quiz
-    assessment -> student: Present Scenario Questions
-    student -> assessment: Choose Best Responses
-    assessment -> ml: Evaluate Responses
-    ml --> assessment: Social Engineering Score
-end
+' === Phase III ===
+package "Phase III - Analytical Model Building" as Phase3{
+  rectangle "• Feed processed data to model\n• Machine learning engine generates insights\n• Model outputs: Mastery Level & Difficulty Index\n• Feedback and refinement loop for improvement" as P3
+}
 
-== 4. Real-time Analysis & Scoring ==
-assessment -> ml: Compile All Activity Data
-ml -> ml: Neural Network Processing
-ml -> ml: Generate Comprehensive Scores
-ml -> ml: Identify Strengths & Weaknesses
-ml --> assessment: Detailed Analysis Results
+' === Phase IV ===
+package "Phase IV - Analytics & Reporting" as Phase4{
+  rectangle "• Processed and scored data from ML model\n• Visualize data in dashboard\n• Modes: Pre/post assessment, Engagement dashboard, Strength by topic, Weakness by topic\n• Interactive analytics for users & admins\n• Track pre/post assessments scores and store in history" as P4
+}
 
-== 5. Results & Personalized Recommendations ==
-assessment -> dashboard: Send Analysis Results
-dashboard -> dashboard: Generate Visualizations
-dashboard -> student: Display Score Dashboard
-dashboard -> student: Show Progress Charts
-dashboard -> student: Provide Security Recommendations
-dashboard -> student: Suggest Career Paths
+' === Phase V ===
+package "Phase V - Governance & Security Operations" as Phase5{
+  rectangle "• Security and compliance layer for data transmission (HTTPS)\n• Compliance checks (FERPA, IRS) alignment\n• Authentication & encryption layers" as P5
+}
 
-== 6. Data Persistence & Reporting ==
-dashboard -> storage: Save Session Results
-storage -> storage: Update User Progress
-storage -> github: Sync Reports (Optional)
-github -> github: Store Aggregated Data
-storage -> dashboard: Generate Progress Report
-dashboard -> student: Email/Download Report
+' === Phase VI ===
+package "Phase VI - Continuous Learning Loop" as Phase6{
+  rectangle "• Gather insights from feedback\n• Adaptive updates to models & content through auto-tuning difficulty levels\n• Personalized feedback & guidance\n• Educator guidance and feedback to ML engine" as P6
+}
 
-== 7. Continuous Learning Loop ==
-dashboard -> student: Suggest Next Activities
-student -> dashboard: Continue Learning Journey
-note right: Platform tracks improvement\nover time and adapts\ncontent difficulty
+' === Arrows connecting phases vertically ===
+P1 -down-> P2 : Clean & validated data
+P2 -down-> P3 : Ready data for analysis
+P3 -down-> P4 : Processed insights & results
+P4 -down-> P5 : Secured reports & data storage
+P5 -down-> P6 : Feedback & improvement actions
+P6 -up-> P3 : Continuous improvement cycle
+
+note bottom
+The system moves through six phases — from data collection to continuous feedback —
+creating a secure, adaptive learning environment for users.
+end note
 
 @enduml
