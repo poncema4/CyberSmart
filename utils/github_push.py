@@ -6,13 +6,15 @@ GITHUB_REPO = "poncema4/CyberSmart"
 
 def push_to_github(file_path: str, commit_message: str | None = None, branch: str = "main") -> None:
     """
-    Push password repo and feedback comments to Github repo
+    Push password repo, feedback comments, and user scores to Github repo
     """
     if commit_message is None:
         if file_path.endswith("password_report.csv"):
             commit_message = "Updated password report for CyberSmart!"
         elif file_path.endswith("feedback.csv"):
             commit_message = "Updated user feedback for CyberSmart!"
+        elif file_path.endswith("user_scores.csv"):
+            commit_message = "Updated user assessment scores for CyberSmart!"
         else:
             commit_message = "Updated file for CyberSmart!"
 

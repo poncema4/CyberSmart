@@ -3,6 +3,8 @@ import re
 import hashlib
 import math
 import time
+import csv
+import os
 from datetime import datetime
 from utils.github_push import push_to_github
 
@@ -113,8 +115,6 @@ def save_to_file(password: str, strength: int, entropy: float) -> None:
     """
     Save the password check result to password_report.csv and attempt to push to Github
     """
-    import csv
-    import os
     
     local_time = datetime.now().astimezone()
     csv_file = "reports/password_report.csv"

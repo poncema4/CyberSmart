@@ -3,6 +3,9 @@ import hashlib
 from datetime import datetime
 from typing import Optional, Dict, List, Tuple
 import os
+import csv
+from datetime import datetime
+from utils.github_push import push_to_github
 
 class DatabaseManager:
     def __init__(self, db_path: str = "data/cybersmart.db"):
@@ -192,8 +195,6 @@ class DatabaseManager:
         """
         Save user scores to database and CSV file, keeping both synchronized
         """
-        import csv
-        from datetime import datetime
         
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
@@ -235,6 +236,11 @@ class DatabaseManager:
                 timestamp, username, user_id, session_id, exam_type,
                 phishing_score, password_match_score, password_strength_entropy, overall_score
             ])
+
+        try:
+            push_to_github(csv_file)
+        except Exception as e:
+            print(f"Failed to push user_scores.csv to GitHub: {e}")
     
     def get_user_scores(self, user_id: int) -> List[Dict]:
         """

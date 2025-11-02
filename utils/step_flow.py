@@ -12,6 +12,9 @@ from games.password_strength.password_strength import password_strength
 from utils.recommendations import get_personalized_recommendations
 from utils.auth import show_auth_page, show_exam_type_selection, show_user_dashboard, show_score_history
 from utils.db import db
+import csv
+import os
+import csv
 
 STEPS = [
     "auth",
@@ -186,8 +189,6 @@ def run_step_flow() -> None:
         
         if submit_feedback:
             if feedback.strip():
-                import csv
-                import os
                 
                 csv_file = "reports/feedback.csv"
                 file_exists = os.path.isfile(csv_file)
@@ -426,19 +427,20 @@ def run_step_flow() -> None:
         feedbacks = []
         try:
             with open("reports/feedback.csv", "r", encoding="utf-8") as f:
-                content = f.read()
-                feedbacks = [fb for fb in content.split("-------------------\n") if fb.strip()]
+                reader = csv.reader(f)
+                next(reader)
+                for row in reader:
+                    if len(row) >= 2:
+                        timestamp, feedback_text = row[0], row[1]
+                        feedbacks.append(f"**[{timestamp}]**\n\n{feedback_text}")
         except FileNotFoundError:
             pass
 
         if feedbacks:
             with st.expander("View all feedback", expanded=False):
-                st.markdown(
-                    '<div style="background-color: white; padding: 15px; border-radius: 5px; max-height: 300px; overflow-y: auto; color: black;">'
-                    + '<hr style="margin: 10px 0; border-top: 1px solid #e0e0e0;">'.join([f"{f}" for f in feedbacks])
-                    + '</div>',
-                    unsafe_allow_html=True
-                )
+                for feedback in feedbacks:
+                    st.markdown(feedback)
+                    st.markdown("---")
         else:
             st.info("No feedback yet. Be the first to leave a review!")
 
