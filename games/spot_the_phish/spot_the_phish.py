@@ -541,9 +541,9 @@ def spot_the_phish() -> int | None:
         if user_id:
             weak_areas = db.get_user_weak_areas(user_id)
             if weak_areas['phishing']['is_weak']:
-                st.info("Practice Mode: Focus on phishing - your pre-assessment showed this needs improvement!")
+                st.info("Practice Mode: Focus on phishing, your pre-assessment showed this needs improvement!")
             if weak_areas['phishing']['is_slow']:
-                st.info("Practice Mode: Try to answer faster - tracking your response time for improvement!")
+                st.info("Practice Mode: Try to answer faster, tracking your response time for improvement!")
     
     if "selected_questions" not in st.session_state or st.session_state.get('current_assessment_type') != assessment_type:
         st.session_state.selected_questions = random.sample(question_pool, 10)
