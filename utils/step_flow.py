@@ -432,7 +432,7 @@ def run_step_flow() -> None:
                 for row in reader:
                     if len(row) >= 2:
                         timestamp, feedback_text = row[0], row[1]
-                        feedbacks.append(f"**[{timestamp}]**\n\n{feedback_text}")
+                        feedbacks.append(f"**[{timestamp}]**\n{feedback_text}")
         except FileNotFoundError:
             pass
 
