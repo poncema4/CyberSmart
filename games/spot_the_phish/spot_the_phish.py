@@ -1,5 +1,7 @@
 import streamlit as st
 import random
+import time
+from utils.db import db
 
 def spot_the_phish() -> int | None:
     st.header("Spot the Phish")
@@ -8,6 +10,10 @@ def spot_the_phish() -> int | None:
     """)
 
     assessment_type = st.session_state.get('selected_exam_type', 'practice')
+    user_id = st.session_state.get('user_info', {}).get('id')
+    
+    if 'question_start_times' not in st.session_state:
+        st.session_state.question_start_times = {}
     
     pre_questions = [
         {
@@ -526,12 +532,25 @@ def spot_the_phish() -> int | None:
         question_pool = pre_questions
     elif assessment_type == 'post':
         question_pool = post_questions
-    else:  # practice
+        if user_id:
+            weak_areas = db.get_user_weak_areas(user_id)
+            if weak_areas['phishing']['is_weak'] or weak_areas['phishing']['is_slow']:
+                st.info("Adaptive Learning: Extra challenging phishing questions added based on your pre-assessment performance!")
+    else:
         question_pool = practice_questions
+        if user_id:
+            weak_areas = db.get_user_weak_areas(user_id)
+            if weak_areas['phishing']['is_weak']:
+                st.info("Practice Mode: Focus on phishing - your pre-assessment showed this needs improvement!")
+            if weak_areas['phishing']['is_slow']:
+                st.info("Practice Mode: Try to answer faster - tracking your response time for improvement!")
     
     if "selected_questions" not in st.session_state or st.session_state.get('current_assessment_type') != assessment_type:
         st.session_state.selected_questions = random.sample(question_pool, 10)
         st.session_state.current_assessment_type = assessment_type
+        st.session_state.question_start_times = {}
+        for i in range(10):
+            st.session_state.question_start_times[i] = time.time()
     
     questions = st.session_state.selected_questions
 
@@ -547,30 +566,66 @@ def spot_the_phish() -> int | None:
         
     question_order = st.session_state.phish_order
 
+    current_time = time.time()
     for idx, q in enumerate(question_order, start=1):
         question = questions[q]
+
+        if q not in st.session_state.question_start_times:
+            st.session_state.question_start_times[q] = current_time
+        
         st.write(f"**Q{idx}: {question['question']}**")
+
+        previous_answer = st.session_state.phish_answers.get(q)
         st.session_state.phish_answers[q] = st.radio(
             "", question["options"], key=f"phish_{q}"
         )
 
+        if previous_answer != st.session_state.phish_answers[q]:
+            st.session_state.question_start_times[q] = time.time()
+
     if st.button("Check Results", key="phish_submit"):
         score = 0
         user_answers = {}
+        session_id = st.session_state.get('session_id', 'unknown')
+        
+        end_time = time.time()
+        
         for idx, q in enumerate(question_order, start=1):
             question = questions[q]
             selected = st.session_state.phish_answers[q]
             selected_index = question["options"].index(selected)
             user_answers[q] = selected_index
-            if selected_index == question["answer"]:
-                st.success(f"✔ Q{idx}")
+
+            start_time = st.session_state.question_start_times.get(q, end_time)
+            response_time = end_time - start_time
+            
+            is_correct = selected_index == question["answer"]
+            if is_correct:
+                st.success(f"✔ Q{idx} (took {response_time:.1f}s)")
                 score += 1
             else:
-                st.error(f"✘ Q{idx}: {question['explanations'][selected_index]}")
+                st.error(f"✘ Q{idx}: {question['explanations'][selected_index]} (took {response_time:.1f}s)")
+
+            if user_id and session_id:
+                question_id = f"phish_{hash(question['question']) % 10000}"
+                db.save_performance_metric(
+                    user_id=user_id,
+                    session_id=session_id,
+                    exam_type=assessment_type,
+                    game_type='phishing',
+                    question_id=question_id,
+                    is_correct=is_correct,
+                    response_time=response_time
+                )
+        
         st.session_state['spot_the_phish_score'] = score
         st.session_state['phish_attempted'] = True
         st.session_state['phish_user_answers'] = user_answers
-        st.info(f"Your score: {score}/10")
+        
+        avg_time = sum(end_time - st.session_state.question_start_times.get(q, end_time) 
+                       for q in question_order) / len(question_order)
+        st.info(f"Your score: {score}/10 | Average response time: {avg_time:.1f}s per question")
+        
         return score
 
     return None

@@ -36,6 +36,9 @@ reset_db.py
 .env.production
 .env.staging
 
+# Exclude old text reports
+reports/*.txt
+
 # API keys and secrets
 *.key
 *.pem

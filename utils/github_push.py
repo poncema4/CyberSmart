@@ -9,9 +9,9 @@ def push_to_github(file_path: str, commit_message: str | None = None, branch: st
     Push password repo and feedback comments to Github repo
     """
     if commit_message is None:
-        if file_path.endswith("password_report.txt"):
+        if file_path.endswith("password_report.csv"):
             commit_message = "Updated password report for CyberSmart!"
-        elif file_path.endswith("feedback.txt"):
+        elif file_path.endswith("feedback.csv"):
             commit_message = "Updated user feedback for CyberSmart!"
         else:
             commit_message = "Updated file for CyberSmart!"

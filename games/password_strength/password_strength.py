@@ -111,15 +111,31 @@ def hash_password(password: str) -> str:
 
 def save_to_file(password: str, strength: int, entropy: float) -> None:
     """
-    Save the password check result to password_report.txt and attempt to push to Github
+    Save the password check result to password_report.csv and attempt to push to Github
     """
+    import csv
+    import os
+    
     local_time = datetime.now().astimezone()
-    line = f"{local_time.strftime('%Y-%m-%d %H:%M:%S')} | Password: {'*' * len(password)} | Length: {len(password)} | Strength: {strength} | Entropy: {entropy} bits\n"
-    with open("reports/password_report.txt", "a", encoding="utf-8") as file:
-        file.write(line)
+    csv_file = "reports/password_report.csv"
+    
+    file_exists = os.path.isfile(csv_file)
+    
+    with open(csv_file, "a", newline='', encoding="utf-8") as file:
+        writer = csv.writer(file)
+        
+        if not file_exists:
+            writer.writerow(["Timestamp", "Password Length", "Strength", "Entropy (bits)"])
+        
+        writer.writerow([
+            local_time.strftime('%Y-%m-%d %H:%M:%S'),
+            len(password),
+            strength,
+            entropy
+        ])
 
     try:
-        push_to_github("reports/password_report.txt", commit_message="Updated password report from CyberSmart!", branch="main")
+        push_to_github("reports/password_report.csv", commit_message="Updated password report from CyberSmart!", branch="main")
 
     except Exception as e:
         print(f"Failed to push to GitHub: {e}")
@@ -258,7 +274,7 @@ def password_strength() -> None:
     
     with st.expander("📁 Password Check Logs"):
         st.write("""
-        Password checks are logged to `password_report.txt` with:
+        Password checks are logged to `password_report.csv` with:
         - Timestamp of check
         - Masked password (actual password not stored)
         - Length
@@ -269,6 +285,6 @@ def password_strength() -> None:
         """)
 
         st.markdown(
-            "[View Password Report on GitHub](https://github.com/poncema4/CyberSmart/blob/main/reports/password_report.txt)",
+            "[View Password Report on GitHub](https://github.com/poncema4/CyberSmart/blob/main/reports/password_report.csv)",
             unsafe_allow_html=True
         )

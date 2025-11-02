@@ -186,13 +186,24 @@ def run_step_flow() -> None:
         
         if submit_feedback:
             if feedback.strip():
-                with open("reports/feedback.txt", "a", encoding="utf-8") as f:
+                import csv
+                import os
+                
+                csv_file = "reports/feedback.csv"
+                file_exists = os.path.isfile(csv_file)
+                
+                with open(csv_file, "a", newline='', encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    
+                    if not file_exists:
+                        writer.writerow(["Timestamp", "Feedback"])
+
                     local_time = datetime.now().astimezone()
                     timestamp = local_time.strftime("%Y-%m-%d %H:%M:%S")
-                    f.write(f"[{timestamp}] {feedback.strip()}\n-------------------\n")
+                    writer.writerow([timestamp, feedback.strip()])
                 
                 try:
-                    push_to_github("reports/feedback.txt")
+                    push_to_github("reports/feedback.csv")
                 except Exception as e:
                     print(f"Failed to push feedback to GitHub: {e}")
                 
@@ -279,10 +290,28 @@ def run_step_flow() -> None:
                     overall_score=st.session_state.final_score
                 )
                 
+                newly_awarded = db.check_and_award_badges(user_id)
+                if newly_awarded:
+                    st.session_state.new_badges = newly_awarded
+                
                 st.session_state.scores_saved = True
                 st.session_state.sidebar_refresh = True
         
         st.markdown('<div class="step-title" style="margin-bottom:5px;">Thank you for completing CyberSmart!</div>', unsafe_allow_html=True)
+
+        if st.session_state.get('new_badges'):
+            st.success("🎉 Congratulations! You earned new badges!")
+            badge_names = {
+                'phish_hunter': '🎣 Phish Hunter',
+                'password_pro': '🔐 Password Pro',
+                'cyber_defender': '🛡️ Cyber Defender',
+                'quick_learner': '⚡ Quick Learner',
+                'perfect_score': '⭐ Perfect Score',
+                'dedicated_student': '📚 Dedicated Student'
+            }
+            for badge_id in st.session_state.new_badges:
+                if badge_id in badge_names:
+                    st.info(f"**{badge_names[badge_id]}** unlocked!")
         
         st.markdown('<div class="section-heading" style="color: #ffffff; margin-top:10px;">Your Results</div>', unsafe_allow_html=True)
         
@@ -396,7 +425,7 @@ def run_step_flow() -> None:
         
         feedbacks = []
         try:
-            with open("reports/feedback.txt", "r", encoding="utf-8") as f:
+            with open("reports/feedback.csv", "r", encoding="utf-8") as f:
                 content = f.read()
                 feedbacks = [fb for fb in content.split("-------------------\n") if fb.strip()]
         except FileNotFoundError:

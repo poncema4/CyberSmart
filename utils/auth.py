@@ -253,6 +253,10 @@ def show_user_dashboard():
             with st.expander("📊 Your Assessment History", expanded=False):
                 show_score_history_sidebar()
             
+            user_id = st.session_state.user_info['id']
+            with st.expander("🏆 Badges", expanded=False):
+                show_user_badges(user_id)
+            
             if st.button("🚪 Logout", use_container_width=True, type="secondary"):
                 logout_user()
 
@@ -453,3 +457,111 @@ def show_score_history():
                 <small>0 participants</small>
             </div>
             ''', unsafe_allow_html=True)
+
+def show_user_badges(user_id: int):
+    """
+    Display user's earned badges with locked/unlocked states
+    """
+    BADGES = {
+        'phish_hunter': {
+            'name': '🎣 Phish Hunter',
+            'description': 'Score 80% or higher on phishing detection',
+            'icon': '🎣',
+            'color': '#00BCD4'
+        },
+        'password_pro': {
+            'name': '🔐 Password Pro',
+            'description': 'Score 80% or higher on password matching',
+            'icon': '🔐',
+            'color': '#9C27B0'
+        },
+        'cyber_defender': {
+            'name': '🛡️ Cyber Defender',
+            'description': 'Score 80% or higher overall on any assessment',
+            'icon': '🛡️',
+            'color': '#FF9800'
+        },
+        'quick_learner': {
+            'name': '⚡ Quick Learner',
+            'description': 'Improve your score by 20+ points between attempts',
+            'icon': '⚡',
+            'color': '#FFEB3B'
+        },
+        'perfect_score': {
+            'name': '⭐ Perfect Score',
+            'description': 'Achieve a perfect 200/200 on any assessment',
+            'icon': '⭐',
+            'color': '#FFD700'
+        },
+        'dedicated_student': {
+            'name': '📚 Dedicated Student',
+            'description': 'Complete all three assessment types (Pre, Practice, Post)',
+            'icon': '📚',
+            'color': '#4CAF50'
+        }
+    }
+    
+    earned_badges = db.get_user_badges(user_id)
+    
+    cols = st.columns(2)
+    
+    for idx, (badge_id, badge_info) in enumerate(BADGES.items()):
+        is_earned = badge_id in earned_badges
+        
+        with cols[idx % 2]:
+            if is_earned:
+                st.markdown(f'''
+                <div style="
+                    background: linear-gradient(135deg, {badge_info['color']}DD, {badge_info['color']}AA);
+                    border-radius: 12px;
+                    padding: 1rem;
+                    margin: 0.5rem 0;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                    border: 2px solid {badge_info['color']};
+                    transition: transform 0.2s;
+                    cursor: pointer;
+                " title="{badge_info['description']}">
+                    <div style="font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem;">
+                        {badge_info['icon']}
+                    </div>
+                    <div style="text-align: center; color: white; font-weight: 600;">
+                        {badge_info['name']}
+                    </div>
+                    <div style="text-align: center; color: white; font-size: 0.85rem; margin-top: 0.3rem; opacity: 0.9;">
+                        {badge_info['description']}
+                    </div>
+                    <div style="text-align: center; margin-top: 0.5rem;">
+                        <span style="background: rgba(255,255,255,0.3); padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; color: white;">
+                            ✓ UNLOCKED
+                        </span>
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
+            else:
+                st.markdown(f'''
+                <div style="
+                    background: linear-gradient(135deg, #cccccc55, #99999933);
+                    border-radius: 12px;
+                    padding: 1rem;
+                    margin: 0.5rem 0;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                    border: 2px dashed #999;
+                    opacity: 0.6;
+                    cursor: help;
+                " title="{badge_info['description']}">
+                    <div style="font-size: 2.5rem; text-align: center; margin-bottom: 0.5rem; filter: grayscale(100%);">
+                        {badge_info['icon']}
+                    </div>
+                    <div style="text-align: center; color: #666; font-weight: 600;">
+                        {badge_info['name']}
+                    </div>
+                    <div style="text-align: center; color: #888; font-size: 0.85rem; margin-top: 0.3rem;">
+                        {badge_info['description']}
+                    </div>
+                    <div style="text-align: center; margin-top: 0.5rem;">
+                        <span style="background: rgba(0,0,0,0.1); padding: 0.2rem 0.5rem; border-radius: 12px; font-size: 0.75rem; color: #999;">
+                            🔒 LOCKED
+                        </span>
+                    </div>
+                </div>
+                ''', unsafe_allow_html=True)
