@@ -7,7 +7,7 @@
 </p>
 
 <p align="left">
-  <strong><a href="https://github.com/poncema4/CyberSmart">CyberSmart</a></strong> is an innovative cybersecurity education platform that uses machine learning algorithms to provide personalized learning experiences in password security and phishing awareness. The platform employs neural networks and advanced scoring algorithms to evaluate user performance and provide tailored security recommendations.
+  <strong><a href="https://github.com/poncema4/CyberSmart">CyberSmart</a></strong> is an innovative cybersecurity education platform that uses machine learning algorithms to provide personalized learning experiences in password security and phishing awareness. The platform employs neural networks and advanced scoring algorithms to evaluate user performance and provide tailored security recommendations!
 </p>
 
 <div align="center">
